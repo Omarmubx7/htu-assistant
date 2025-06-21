@@ -153,34 +153,6 @@
             background: var(--surface);
             padding: 12px 20px;
         }
-        #quick-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .quick-btn {
-            padding: 6px 16px;
-            border-radius: 14px;
-            border: 1.5px solid var(--border);
-            background: var(--quick-btn-bg);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 2px;
-            box-shadow: 0 1px 4px #0001;
-            transition: background 0.2s, color 0.2s, border 0.2s, box-shadow 0.2s;
-            position: relative;
-        }
-        .quick-btn:hover, .quick-btn:focus {
-            background: var(--primary-accent);
-            color: #fff;
-            border-color: var(--primary-accent);
-            box-shadow: 0 2px 8px #007aff33;
-            outline: none;
-        }
         #input-container {
             display: flex;
             background: var(--input-bg);
@@ -242,6 +214,11 @@
         @media (max-width: 768px) {
             #chat-container { width: 100vw; height: 100vh; border-radius: 0; }
             .message { max-width: 98%; }
+            #header { padding: 12px 8px; }
+            #chat-window { padding: 12px 4px 8px 4px; }
+            #bottom-container { padding: 8px 4px; }
+            #input-container { padding: 2px 2px; }
+            .message-bubble { font-size: 0.98rem; padding: 10px 12px; }
         }
     </style>
 </head>
@@ -264,11 +241,6 @@
             <div class="dot"></div><div class="dot"></div><div class="dot"></div>
         </div>
         <div id="bottom-container">
-            <div id="quick-actions">
-                <button class="quick-btn">help</button>
-                <button class="quick-btn">cs101</button>
-                <button class="quick-btn">dr ahmed bataineh</button>
-            </div>
             <div id="input-container">
                 <form id="chatForm" style="display: flex; width: 100%;">
                     <input type="text" id="user-input" placeholder="Type your command..." autocomplete="off">
