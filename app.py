@@ -171,6 +171,43 @@ def find_professor_office_hours_smart(professor_name):
     potential_matches.sort(key=lambda x: x.get('similarity', 0), reverse=True)
     return potential_matches
 
+def find_study_plan(major, level_query):
+    """Finds the study plan for a given major and level."""
+    normalized_major = major.lower().replace("engineering", "eng").strip()
+    
+    # Find the best matching major key
+    best_major_match = None
+    highest_similarity = 0.7 
+    for major_key in subjects_data.keys():
+        similarity = calculate_similarity(normalized_major, major_key.lower())
+        if similarity > highest_similarity:
+            highest_similarity = similarity
+            best_major_match = major_key
+
+    if not best_major_match:
+        return None
+
+    # Match level query (first, second, etc.)
+    level_map = {
+        'first': 'First Year', '1st': 'First Year',
+        'second': 'Second Year', '2nd': 'Second Year',
+        'third': 'Third Year', '3rd': 'Third Year',
+        'fourth': 'Fourth Year', '4th': 'Fourth Year',
+        'fifth': 'Fifth Year', '5th': 'Fifth Year',
+    }
+    
+    normalized_level = None
+    for key, value in level_map.items():
+        if key in level_query.lower():
+            normalized_level = value
+            break
+            
+    if not normalized_level or normalized_level not in subjects_data[best_major_match]:
+        return None
+        
+    plan = subjects_data[best_major_match][normalized_level]
+    return {'major': best_major_match, 'level': normalized_level, 'plan': plan}
+
 def format_schedule(schedule_dict):
     """Formats the schedule dictionary into a readable string."""
     if not schedule_dict:
@@ -217,10 +254,11 @@ def generate_smart_response(intent, user_message, subject_result=None, professor
             "🎓 Welcome to HTU Info Bot! I can help you find course information and professor office hours.",
             "Hi there! I'm here to help with HTU academic information. What would you like to know?"
         ]
-        return random.choice(greetings)
+        return {'text': random.choice(greetings)}
     
     elif intent == 'help':
-        return """
+        return {
+            'text': """
 🤖 **HTU Info Bot - Smart Assistant**
 
 I can help you with:
@@ -242,6 +280,7 @@ I can help you with:
 
 Try asking me about any course or professor!
         """.strip()
+        }
     
     elif subject_result:
         if subject_result['match_type'] == 'fuzzy':
@@ -259,14 +298,15 @@ Try asking me about any course or professor!
             response += f"💡 *Did you mean {subject_result['original_code']} instead of your search?*"
         
         response += "\n\n💡 **You can also ask:**\n• Which professors teach this course?\n• Are there prerequisites?"
-        return response
+        return {'text': response}
 
     elif professor_results:
         # Handle multiple potential matches
         if len(professor_results) > 1:
-            response = f"🤔 I found a few people matching **{user_message}**. Who are you looking for?\n\n"
-            for prof in professor_results[:4]: # Limit to 4 to avoid overwhelming
-                response += f"• {prof.get('name', 'N/A')}\n"
+            response = {
+                'text': f"🤔 I found a few people matching **{user_message}**. Who are you looking for?",
+                'buttons': [prof.get('name', 'N/A') for prof in professor_results[:4]]
+            }
             return response
 
         # Handle a single match
@@ -286,23 +326,13 @@ Try asking me about any course or professor!
         response += f"**Office Hours:**\n{schedule}"
         
         response += f"\n\n💡 You can now ask me for this professor's **email**, **office**, or **schedule** separately."
-        return response
+        return {'text': response}
     
     elif intent == 'unknown':
-        suggestions = [
-            "🤔 I'm not sure I understood. Here are some things you can ask me:",
-            "❓ Let me help you find what you're looking for. Try one of these:",
-            "💭 I didn't find an exact match. Here are some suggestions:"
-        ]
-        
-        response = random.choice(suggestions) + "\n\n"
-        response += "📚 **For Course Information:**\n"
-        response += "• \"Tell me about CS201\"\n\n"
-        response += "👨‍🏫 **For Professor Information:**\n"
-        response += "• \"Office hours for Dr. Ahmed Bataineh\"\n\n"
-        response += "💡 **Or try:**\n"
-        response += "• \"Help\" - to see all features"
-        
+        response = {
+            'text': "🤔 I'm not sure I understood. Here are some things you can ask me:",
+            'buttons': ["Find a course", "Find a professor", "Help"]
+        }
         return response
 
 @app.route('/')
@@ -329,25 +359,39 @@ def chat():
         if any(word in message_lower for word in ['email', 'contact']):
             email = context.last_professor.get('email', 'I could not find an email for them.')
             response = f"📧 The email for **{prof_name}** is: {email}"
-            return jsonify({'response': response})
+            return jsonify({'response': {'text': response}})
         if any(word in message_lower for word in ['office', 'location', 'room']):
             office = context.last_professor.get('office_number', 'I could not find their office number.')
             response = f"📍 The office for **{prof_name}** is: {office}"
-            return jsonify({'response': response})
+            return jsonify({'response': {'text': response}})
         if any(word in message_lower for word in ['schedule', 'hours', 'when', 'times']):
             schedule = format_schedule(context.last_professor.get('schedule', {}))
             if "No schedule" in schedule or "No specific" in schedule:
                  response = f"🗓️ I couldn't find a specific schedule for **{prof_name}**."
             else:
                  response = f"🗓️ Here is the schedule for **{prof_name}**:\n{schedule}"
-            return jsonify({'response': response})
+            return jsonify({'response': {'text': response}})
 
     # --- Regular Processing ---
     intent = extract_intent(message_lower)
     subject_code_match = re.search(r'([a-zA-Z]{2,4}\s*\d{3})', user_message)
+    study_plan_match = re.search(r'(show|tell|give|what is|find)\s+(me\s+)?(the\s+)?(first|second|third|fourth|fifth|1st|2nd|3rd|4th|5th)\s+year\s+(plan\s+)?(for\s+)?([a-zA-Z\s]+)', message_lower)
 
     professor_results = None
     subject_result = None
+    
+    if study_plan_match:
+        level_query = study_plan_match.group(4)
+        major_query = study_plan_match.group(7)
+        plan_result = find_study_plan(major_query, level_query)
+        if plan_result:
+            response_text = f"📚 Here is the **{plan_result['level']}** plan for **{plan_result['major']}**:\n\n"
+            for code, details in plan_result['plan'].items():
+                response_text += f"• **{code}**: {details['name']} ({details['credits']} credits)\n"
+            response = {'text': response_text}
+        else:
+            response = {'text': f"Sorry, I couldn't find a study plan for '{major_query}'."}
+        return jsonify({'response': response})
 
     if subject_code_match:
         subject_result = find_subject_info_smart(subject_code_match.group(1))
@@ -368,8 +412,8 @@ def chat():
         context.last_professor = None
         context.last_subject = None
 
-    response = generate_smart_response(intent, user_message, subject_result, professor_results)
-    return jsonify({'response': response})
+    response_data = generate_smart_response(intent, user_message, subject_result, professor_results)
+    return jsonify({'response': response_data})
 
 if __name__ == '__main__':
     # Add both JSON files to 'extra_files' to trigger auto-reload on change

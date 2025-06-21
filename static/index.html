@@ -137,6 +137,28 @@
             line-height: 1.6;
             border-bottom-left-radius: 6px;
         }
+        .message-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+            padding-left: 8px;
+        }
+        .quick-action-btn {
+            background: var(--quick-btn-bg);
+            border: 1px solid var(--border);
+            color: var(--primary-accent);
+            padding: 8px 14px;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .quick-action-btn:hover {
+            background: var(--quick-btn-hover);
+            transform: translateY(-1px);
+        }
         .user-message { align-self: flex-end; }
         .user-message .message-bubble {
             background: var(--user-bubble);
@@ -233,9 +255,7 @@
             <button id="theme-toggle" title="Toggle Dark Mode">🌙</button>
         </div>
         <div id="chat-window">
-            <div class="message bot-message">
-                <div class="message-bubble" id="welcome-typewriter">👋 Welcome to Athar Assistant! Search for a course (e.g., 'CPE342') or a professor. For professors, please use their first name only (e.g., 'Hana').</div>
-            </div>
+            <!-- Initial message is now handled by the welcome function in JS -->
         </div>
         <div class="typing-indicator">
             <span style="font-size: 1rem; color: var(--primary-accent); margin-right: 5px;">Assistant is typing</span>
@@ -279,16 +299,16 @@
                 themeToggle.title = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
             }
             themeToggle.addEventListener('click', toggleTheme);
-            initTheme();
+            
 
-            function setupQuickActions() {
-                document.querySelectorAll('.quick-btn, .message-link').forEach(button => {
-                    button.onclick = (e) => {
-                        e.preventDefault();
-                        sendMessage(button.textContent);
-                    };
-                });
+            function welcome() {
+                const welcomeData = {
+                    text: "👋 Welcome to Athar Assistant! I can help you find course information, professor office hours, and study plans. What would you like to do?",
+                    buttons: ["Find a Course", "Find a Professor", "View a Study Plan"]
+                };
+                appendMessage(welcomeData, 'bot');
             }
+
             chatForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const message = userInput.value.trim();
@@ -316,19 +336,40 @@
                     appendMessage('Sorry, something went wrong. Please try again.', 'bot');
                 });
             }
-            function appendMessage(message, sender) {
+            function appendMessage(data, sender) {
                 const messageContainer = document.createElement('div');
                 messageContainer.classList.add('message', `${sender}-message`);
                 const messageBubble = document.createElement('div');
                 messageBubble.classList.add('message-bubble');
-                let processedMessage = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+                let processedMessage = data.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                 processedMessage = processedMessage.replace(/\n/g, '<br>');
-                // No quick actions to create from bot messages in this version
                 messageBubble.innerHTML = processedMessage;
                 messageContainer.appendChild(messageBubble);
+
+                if (data.buttons && data.buttons.length > 0) {
+                    const buttonsContainer = document.createElement('div');
+                    buttonsContainer.className = 'message-buttons';
+                    data.buttons.forEach(btnText => {
+                        const button = document.createElement('button');
+                        button.className = 'quick-action-btn';
+                        button.textContent = btnText;
+                        button.onclick = () => {
+                            sendMessage(btnText);
+                            // Visually disable buttons after click
+                            buttonsContainer.querySelectorAll('.quick-action-btn').forEach(btn => {
+                                btn.disabled = true;
+                                btn.style.opacity = '0.6';
+                                btn.style.cursor = 'not-allowed';
+                            });
+                        };
+                        buttonsContainer.appendChild(button);
+                    });
+                    messageContainer.appendChild(buttonsContainer);
+                }
+
                 chatWindow.appendChild(messageContainer);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
-                // Since there are no new buttons, we don't need to call setupQuickActions here
             }
             function showTypingIndicator(show) {
                 typingIndicator.style.display = show ? 'flex' : 'none';
@@ -336,8 +377,9 @@
                     chatWindow.scrollTop = chatWindow.scrollHeight;
                 }
             }
-            // Initial call if there were any static buttons
-            // setupQuickActions();
+            // Initialize
+            initTheme();
+            welcome();
         });
     </script>
 </body>
