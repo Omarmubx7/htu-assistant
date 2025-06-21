@@ -3,22 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HTU Assistant - Terminal Mode</title>
+    <title>HTU Assistant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --htu-red: #E31E24;
-            --terminal-bg: #101112;
-            --terminal-green: #00FF41;
-            --terminal-white: #F8F8F2;
-            --terminal-gray: #222325;
-            --bubble-bg: #18191a;
-            --bubble-border: #E31E24;
-            --quick-btn-bg: #18191a;
-            --quick-btn-border: #E31E24;
-            --quick-btn-hover: #E31E24;
+            --primary-accent: #007AFF;
+            --background: #f5f6fa;
+            --surface: #fff;
+            --text-primary: #1d1d1f;
+            --text-secondary: #6e6e73;
+            --border: #e0e0e0;
+            --bot-bubble: #f0f0f5;
+            --user-bubble: var(--primary-accent);
+            --input-bg: #fff;
+            --quick-btn-bg: #f5f6fa;
+            --quick-btn-hover: #e0e0e0;
+        }
+        [data-theme="dark"] {
+            --primary-accent: #0A84FF;
+            --background: #18191a;
+            --surface: #232428;
+            --text-primary: #fff;
+            --text-secondary: #b0b0b5;
+            --border: #33343a;
+            --bot-bubble: #232428;
+            --user-bubble: var(--primary-accent);
+            --input-bg: #18191a;
+            --quick-btn-bg: #232428;
+            --quick-btn-hover: #33343a;
         }
         html, body {
             height: 100%;
@@ -27,58 +41,39 @@
         }
         body {
             min-height: 100vh;
-            background: var(--terminal-bg);
-            color: var(--terminal-green);
-            font-family: 'Fira Mono', 'Consolas', 'Menlo', 'Monaco', monospace;
+            background: var(--background);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
-        }
-        /* CRT scanline effect */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            pointer-events: none;
-            background: repeating-linear-gradient(
-                to bottom,
-                rgba(255,255,255,0.03) 0px,
-                rgba(255,255,255,0.03) 1px,
-                transparent 2px,
-                transparent 4px
-            );
-            z-index: 1;
-            mix-blend-mode: lighten;
-            animation: scanlines 2s linear infinite;
-        }
-        @keyframes scanlines {
-            0% { background-position-y: 0; }
-            100% { background-position-y: 4px; }
+            transition: background 0.3s;
         }
         #chat-container {
             width: 98vw;
             max-width: 800px;
             height: 95vh;
             max-height: 900px;
-            background: var(--terminal-gray);
-            border: 2.5px solid var(--htu-red);
-            border-radius: 12px;
-            box-shadow: 0 0 32px 0 #E31E2433, 0 0 0 2px #E31E24 inset;
+            background: var(--surface);
+            border: 1.5px solid var(--border);
+            border-radius: 18px;
+            box-shadow: 0 4px 32px 0 #0001;
             display: flex;
             flex-direction: column;
             overflow: hidden;
             position: relative;
+            transition: background 0.3s, border 0.3s;
         }
         #header {
             display: flex;
             align-items: center;
-            padding: 12px 20px;
-            border-bottom: 2px solid var(--htu-red);
-            background: #18191a;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1.5px solid var(--border);
+            background: var(--surface);
             z-index: 2;
         }
-        #header svg {
+        #header img {
             width: 36px;
             height: 36px;
             margin-right: 14px;
@@ -86,11 +81,28 @@
         #header h1 {
             margin: 0;
             font-size: 1.2rem;
-            font-family: 'Fira Mono', monospace;
-            color: var(--htu-red);
-            letter-spacing: 2px;
+            font-family: 'Inter', sans-serif;
+            color: var(--primary-accent);
+            letter-spacing: 1px;
             font-weight: 700;
-            text-shadow: 0 0 8px #E31E24, 0 0 2px #fff;
+        }
+        #theme-toggle {
+            background: var(--quick-btn-bg);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+            font-size: 1.2rem;
+        }
+        #theme-toggle:hover {
+            background: var(--quick-btn-hover);
+            transform: scale(1.05);
         }
         #chat-window {
             flex: 1;
@@ -113,45 +125,32 @@
         }
         .message-bubble {
             padding: 14px 20px;
-            border-radius: 8px;
-            background: var(--bubble-bg);
-            border: 1.5px solid var(--bubble-border);
-            color: var(--terminal-green);
+            border-radius: 18px;
+            background: var(--bot-bubble);
+            color: var(--text-primary);
             font-size: 1.05rem;
-            font-family: 'Fira Mono', monospace;
-            box-shadow: 0 0 8px #E31E2433;
+            font-family: 'Inter', sans-serif;
+            box-shadow: 0 2px 8px #0001;
             position: relative;
             overflow-x: auto;
+            line-height: 1.6;
+            border-bottom-left-radius: 6px;
         }
         .user-message { align-self: flex-end; }
         .user-message .message-bubble {
-            background: #1a1b1c;
-            color: var(--htu-red);
-            border-color: var(--htu-red);
-            text-align: right;
-            box-shadow: 0 0 8px #E31E24;
+            background: var(--user-bubble);
+            color: #fff;
+            border-bottom-right-radius: 6px;
+            border-bottom-left-radius: 18px;
         }
         .bot-message { align-self: flex-start; }
         .bot-message .message-bubble {
-            background: #101112;
-            color: var(--terminal-green);
-            border-color: var(--terminal-green);
-            text-align: left;
-            box-shadow: 0 0 8px #00FF41;
-        }
-        .typewriter {
-            display: inline-block;
-            white-space: pre-wrap;
-            border-right: 2px solid var(--terminal-green);
-            animation: blink-cursor 0.8s steps(1) infinite;
-        }
-        @keyframes blink-cursor {
-            0%, 100% { border-color: var(--terminal-green); }
-            50% { border-color: transparent; }
+            background: var(--bot-bubble);
+            color: var(--text-primary);
         }
         #bottom-container {
-            border-top: 2px solid var(--htu-red);
-            background: #18191a;
+            border-top: 1.5px solid var(--border);
+            background: var(--surface);
             padding: 12px 20px;
         }
         #quick-actions {
@@ -162,31 +161,31 @@
         }
         .quick-btn {
             padding: 6px 16px;
-            border-radius: 6px;
-            border: 1.5px solid var(--quick-btn-border);
+            border-radius: 14px;
+            border: 1.5px solid var(--border);
             background: var(--quick-btn-bg);
-            color: var(--terminal-green);
-            font-family: 'Fira Mono', monospace;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
             font-size: 1rem;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
             margin-bottom: 2px;
-            box-shadow: 0 0 8px #E31E24;
+            box-shadow: 0 1px 4px #0001;
             transition: background 0.2s, color 0.2s, border 0.2s, box-shadow 0.2s;
             position: relative;
         }
         .quick-btn:hover, .quick-btn:focus {
-            background: var(--htu-red);
+            background: var(--primary-accent);
             color: #fff;
-            border-color: #fff;
-            box-shadow: 0 0 16px #E31E24;
+            border-color: var(--primary-accent);
+            box-shadow: 0 2px 8px #007aff33;
             outline: none;
         }
         #input-container {
             display: flex;
-            background: #101112;
-            border-radius: 8px;
-            border: 2px solid var(--htu-red);
+            background: var(--input-bg);
+            border-radius: 12px;
+            border: 1.5px solid var(--border);
             padding: 2px 8px;
             align-items: center;
         }
@@ -197,27 +196,17 @@
             padding: 10px 8px 10px 0;
             font-size: 1.1rem;
             background: transparent;
-            color: var(--terminal-green);
-            font-family: 'Fira Mono', monospace;
-            caret-color: var(--terminal-green);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            caret-color: var(--primary-accent);
             position: relative;
         }
         #user-input:focus {
             outline: none;
         }
-        .blinking-cursor {
-            display: inline-block;
-            width: 10px;
-            height: 1.2em;
-            background: transparent;
-            border-left: 2px solid var(--terminal-green);
-            margin-left: 2px;
-            animation: blink-cursor 0.8s steps(1) infinite;
-            vertical-align: middle;
-        }
         #send-button {
             border: none;
-            background: var(--htu-red);
+            background: var(--primary-accent);
             color: #fff;
             width: 38px;
             height: 38px;
@@ -228,24 +217,24 @@
             justify-content: center;
             margin-left: 8px;
             font-size: 1.2rem;
-            box-shadow: 0 0 8px #E31E24;
+            box-shadow: 0 0 8px #007aff33;
             transition: background 0.2s, box-shadow 0.2s;
         }
         #send-button:hover {
             background: #fff;
-            color: var(--htu-red);
-            box-shadow: 0 0 16px #E31E24;
+            color: var(--primary-accent);
+            box-shadow: 0 0 16px #007aff33;
         }
         .typing-indicator {
             display: none;
             align-items: center;
             gap: 5px;
             padding: 10px 24px;
-            color: var(--terminal-green);
-            font-family: 'Fira Mono', monospace;
+            color: var(--primary-accent);
+            font-family: 'Inter', sans-serif;
         }
         .typing-indicator .dot {
-            width: 8px; height: 8px; background-color: var(--terminal-green); border-radius: 50%; animation: bounce 1.2s infinite;
+            width: 8px; height: 8px; background-color: var(--primary-accent); border-radius: 50%; animation: bounce 1.2s infinite;
         }
         .typing-indicator .dot:nth-child(2) { animation-delay: 0.15s; }
         .typing-indicator .dot:nth-child(3) { animation-delay: 0.3s; }
@@ -259,19 +248,19 @@
 <body>
     <div id="chat-container">
         <div id="header">
-            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="40" height="40" rx="8" fill="#E31E24"/>
-                <text x="20" y="26" text-anchor="middle" fill="#fff" font-family="Fira Mono, monospace" font-size="16" font-weight="bold">HTU</text>
-            </svg>
-            <h1>&gt; HTU Assistant</h1>
+            <div style="display: flex; align-items: center;">
+                <img src="static/images/logo.svg" alt="HTU Logo">
+                <h1>HTU Assistant</h1>
+            </div>
+            <button id="theme-toggle" title="Toggle Dark Mode">🌙</button>
         </div>
         <div id="chat-window">
             <div class="message bot-message">
-                <div class="message-bubble typewriter" id="welcome-typewriter"></div>
+                <div class="message-bubble" id="welcome-typewriter">👋 Welcome to HTU Assistant! Type a command or question to get started.</div>
             </div>
         </div>
         <div class="typing-indicator">
-            <span style="font-size: 1rem; color: var(--terminal-green); margin-right: 5px;">Assistant is typing</span>
+            <span style="font-size: 1rem; color: var(--primary-accent); margin-right: 5px;">Assistant is typing</span>
             <div class="dot"></div><div class="dot"></div><div class="dot"></div>
         </div>
         <div id="bottom-container">
@@ -282,9 +271,7 @@
             </div>
             <div id="input-container">
                 <form id="chatForm" style="display: flex; width: 100%;">
-                    <span style="color:var(--htu-red);font-weight:bold;font-size:1.1em;">$</span>
                     <input type="text" id="user-input" placeholder="Type your command..." autocomplete="off">
-                    <span class="blinking-cursor"></span>
                     <button type="submit" id="send-button">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                     </button>
@@ -293,112 +280,34 @@
         </div>
     </div>
     <script>
-        // Embedded data for the static version
-        const subjectsData = {
-            "Computer Science": {
-                "First Year": {
-                    "CS101": {
-                        "name": "Introduction to Computer Science",
-                        "description": "Fundamental concepts of computer science and programming",
-                        "credits": 3
-                    },
-                    "CS102": {
-                        "name": "Programming Fundamentals",
-                        "description": "Basic programming concepts and problem solving",
-                        "credits": 3
-                    }
-                },
-                "Second Year": {
-                    "CS201": {
-                        "name": "Data Structures and Algorithms",
-                        "description": "Advanced programming concepts and algorithm design",
-                        "credits": 3
-                    },
-                    "CS202": {
-                        "name": "Object-Oriented Programming",
-                        "description": "Principles of OOP and software design",
-                        "credits": 3
-                    }
-                }
-            }
-        };
-        const officeHoursData = [
-            {
-                "name": "Dr. Ahmed Bataineh",
-                "school": "School of Computing and Informatics",
-                "department": "Computer Science",
-                "email": "ahmed.bataineh@htu.edu.jo",
-                "office": "S-324",
-                "office_hours": {
-                    "Sunday": "11:30 AM – 1:00 PM",
-                    "Monday": "11:30 AM – 1:00 PM",
-                    "Wednesday": "11:30 AM – 1:00 PM",
-                    "Thursday": "11:30 AM – 1:00 PM"
-                }
-            },
-            {
-                "name": "Dr. Mohammad Yahia",
-                "school": "School of Computing and Informatics",
-                "department": "Computer Science",
-                "email": "mohammad.yahia@htu.edu.jo",
-                "office": "S-313",
-                "office_hours": {
-                    "Saturday": "1:00 PM – 2:30 PM",
-                    "Sunday": "1:00 PM – 2:30 PM",
-                    "Wednesday": "1:30 PM – 2:30 PM"
-                }
-            },
-            {
-                "name": "Eng. Ibrahim Ghanem",
-                "school": "School of Computing and Informatics",
-                "department": "Cybersecurity",
-                "email": "ibrahim.ghanem@htu.edu.jo",
-                "office": "IJC-07",
-                "office_hours": {
-                    "Sunday": "3:00 PM – 4:00 PM",
-                    "Monday": "12:00 PM – 4:00 PM",
-                    "Tuesday": "9:00 AM – 11:00 AM",
-                    "Wednesday": "3:00 PM – 4:00 PM"
-                }
-            },
-            {
-                "name": "Dr. Mohammad NoorAldeen Alkhateeb",
-                "school": "School of Computing and Informatics",
-                "department": "Computer Science",
-                "email": "mohammad.alkhateeb@htu.edu.jo",
-                "office": "W-B05",
-                "office_hours": {
-                    "Sunday": "1:00 PM – 2:00 PM",
-                    "Monday": "11:30 AM – 12:30 PM",
-                    "Tuesday": "12:00 PM – 1:00 PM",
-                    "Wednesday": "1:00 PM – 2:00 PM",
-                    "Thursday": "11:30 AM – 12:30 PM"
-                }
-            }
-        ];
-        // Typewriter effect for welcome message
-        function typeWriterEffect(element, text, speed = 22) {
-            let i = 0;
-            function type() {
-                if (i < text.length) {
-                    element.innerHTML = text.substring(0, i+1) + '<span class="blinking-cursor"></span>';
-                    i++;
-                    setTimeout(type, speed);
-                } else {
-                    element.innerHTML = text;
-                }
-            }
-            type();
-        }
         document.addEventListener('DOMContentLoaded', function() {
             const chatForm = document.getElementById('chatForm');
             const userInput = document.getElementById('user-input');
             const chatWindow = document.getElementById('chat-window');
             const sendButton = document.getElementById('send-button');
             const typingIndicator = document.querySelector('.typing-indicator');
-            // Welcome typewriter
-            const welcomeTypewriter = document.getElementById('welcome-typewriter');
-            typeWriterEffect(welcomeTypewriter, 'Welcome to HTU Assistant! Type a command or question to get started.');
+            const themeToggle = document.getElementById('theme-toggle');
+
+            // Theme management
+            function initTheme() {
+                const savedTheme = localStorage.getItem('theme') || 'light';
+                document.documentElement.setAttribute('data-theme', savedTheme);
+                updateThemeIcon(savedTheme);
+            }
+            function toggleTheme() {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeIcon(newTheme);
+            }
+            function updateThemeIcon(theme) {
+                themeToggle.innerHTML = theme === 'dark' ? '☀️' : '🌙';
+                themeToggle.title = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+            }
+            themeToggle.addEventListener('click', toggleTheme);
+            initTheme();
+
             function setupQuickActions() {
                 document.querySelectorAll('.quick-btn, .message-link').forEach(button => {
                     button.onclick = (e) => {
@@ -421,112 +330,8 @@
                 setTimeout(() => {
                     const response = processMessage(message);
                     showTypingIndicator(false);
-                    appendBotMessageTypewriter(response);
+                    appendMessage(response, 'bot');
                 }, 800);
-            }
-            function normalizeName(name) {
-                if (typeof name !== 'string') return '';
-                name = name.toLowerCase().trim();
-                // Replace all dash-like characters with '-'
-                name = name.replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D\u2013\u2014\u2015]/g, '-');
-                name = name.replace(/\s+/g, ' ');
-                // Remove accents/diacritics
-                name = name.normalize('NFD').replace(/[00-6f]/g, '');
-                return name;
-            }
-            function processMessage(message) {
-                const cleanMessage = normalizeName(message);
-                if (cleanMessage.includes('hello') || cleanMessage.includes('hi') || cleanMessage.includes('hey')) {
-                    return "👋 <span style='color:#E31E24;font-weight:bold;'>Hello!</span> How can I help you today?";
-                }
-                if (cleanMessage.includes('help')) {
-                    return `<span style='color:#E31E24;font-weight:bold;'>HTU Info Bot - Terminal Mode</span><br><br>Type course codes (e.g., <b>cs201</b>), professor names (e.g., <b>dr ahmed bataineh</b>), or <b>help</b>.<br><br>Commands:<br>- <b>cs101</b> <b>cs201</b> ...<br>- <b>dr ahmed bataineh</b> ...<br>- <b>help</b> (this message)`;
-                }
-                const courseMatch = cleanMessage.match(/\b(cs\d{3})\b/);
-                if (courseMatch) {
-                    const courseCode = courseMatch[1].toUpperCase();
-                    for (const major in subjectsData) {
-                        for (const level in subjectsData[major]) {
-                            if (subjectsData[major][level][courseCode]) {
-                                const course = subjectsData[major][level][courseCode];
-                                return `<span style='color:#E31E24;font-weight:bold;'>${courseCode} - ${course.name}</span><br><br><b>Description:</b> ${course.description}<br><b>Credits:</b> ${course.credits}<br><b>Level:</b> ${level}<br><b>Program:</b> ${major}`;
-                            }
-                        }
-                    }
-                    return `❓ No info for <b>${courseCode}</b>. Try <b>cs101</b>, <b>cs201</b>, etc.`;
-                }
-                // Disambiguation for professor names
-                const matches = officeHoursData.filter(prof =>
-                    normalizeName(prof.name).includes(cleanMessage)
-                );
-                if (matches.length > 1) {
-                    let response = `<span style='color:#E31E24;'>Found multiple professors:</span><br>`;
-                    for (const prof of matches) {
-                        response += `<button class="quick-btn message-link">${prof.name}</button> `;
-                    }
-                    response += `<br><span style='color:#fff;'>Click a name.</span>`;
-                    return response;
-                }
-                if (matches.length === 1) {
-                    const prof = matches[0];
-                    let response = `<span style='color:#E31E24;font-weight:bold;'>Professor ${prof.name}</span><br>`;
-                    if (prof.department) response += `<b>Department:</b> ${prof.department}<br>`;
-                    if (prof.office) response += `<b>Office:</b> ${prof.office}<br>`;
-                    if (prof.email) response += `<b>Email:</b> ${prof.email}<br>`;
-                    const schedule = prof.office_hours;
-                    if (schedule && Object.keys(schedule).length > 0) {
-                        response += `<br><b>Office Hours:</b><br>`;
-                        const daysOrder = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-                        const sortedSchedule = Object.entries(schedule).sort((a, b) => 
-                            daysOrder.indexOf(a[0]) - daysOrder.indexOf(b[0])
-                        );
-                        for (const [day, times] of sortedSchedule) {
-                            if (times) {
-                                response += `• <b>${day}:</b> ${times}<br>`;
-                            }
-                        }
-                    } else {
-                        response += `<br>No office hours listed.`;
-                    }
-                    return response;
-                }
-                // Fuzzy search for partial matches
-                const fuzzyMatches = officeHoursData.filter(prof => {
-                    const profName = normalizeName(prof.name);
-                    return cleanMessage.split(' ').some(word => word.length > 2 && profName.includes(word));
-                });
-                if (fuzzyMatches.length > 1) {
-                    let response = `<span style='color:#E31E24;'>Found similar professors:</span><br>`;
-                    for (const prof of fuzzyMatches) {
-                        response += `<button class="quick-btn message-link">${prof.name}</button> `;
-                    }
-                    response += `<br><span style='color:#fff;'>Click a name.</span>`;
-                    return response;
-                }
-                if (fuzzyMatches.length === 1) {
-                    const prof = fuzzyMatches[0];
-                    let response = `<span style='color:#E31E24;font-weight:bold;'>Professor ${prof.name}</span><br>`;
-                    if (prof.department) response += `<b>Department:</b> ${prof.department}<br>`;
-                    if (prof.office) response += `<b>Office:</b> ${prof.office}<br>`;
-                    if (prof.email) response += `<b>Email:</b> ${prof.email}<br>`;
-                    const schedule = prof.office_hours;
-                    if (schedule && Object.keys(schedule).length > 0) {
-                        response += `<br><b>Office Hours:</b><br>`;
-                        const daysOrder = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
-                        const sortedSchedule = Object.entries(schedule).sort((a, b) => 
-                            daysOrder.indexOf(a[0]) - daysOrder.indexOf(b[0])
-                        );
-                        for (const [day, times] of sortedSchedule) {
-                            if (times) {
-                                response += `• <b>${day}:</b> ${times}<br>`;
-                            }
-                        }
-                    } else {
-                        response += `<br>No office hours listed.`;
-                    }
-                    return response;
-                }
-                return `<span style='color:#E31E24;'>Unknown command.</span> Try <b>help</b>, <b>cs101</b>, or a professor name.`;
             }
             function appendMessage(message, sender) {
                 const messageContainer = document.createElement('div');
@@ -544,27 +349,6 @@
                 chatWindow.appendChild(messageContainer);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
                 setupQuickActions();
-            }
-            function appendBotMessageTypewriter(message) {
-                const messageContainer = document.createElement('div');
-                messageContainer.classList.add('message', 'bot-message');
-                const messageBubble = document.createElement('div');
-                messageBubble.classList.add('message-bubble', 'typewriter');
-                messageContainer.appendChild(messageBubble);
-                chatWindow.appendChild(messageContainer);
-                chatWindow.scrollTop = chatWindow.scrollHeight;
-                let i = 0;
-                function type() {
-                    if (i < message.length) {
-                        messageBubble.innerHTML = message.substring(0, i+1) + '<span class="blinking-cursor"></span>';
-                        i++;
-                        setTimeout(type, 13);
-                    } else {
-                        messageBubble.innerHTML = message;
-                        setupQuickActions();
-                    }
-                }
-                type();
             }
             function showTypingIndicator(show) {
                 typingIndicator.style.display = show ? 'flex' : 'none';
