@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, request, jsonify, send_from_directory
 import json
 import re
 from difflib import SequenceMatcher
@@ -6,8 +6,9 @@ from datetime import datetime
 import random
 from typing import Optional
 import unicodedata
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 app.secret_key = 'htu_info_bot_secret_key_2024'
 
 def load_data():
@@ -296,8 +297,14 @@ Try asking me about any course or professor!
 
 @app.route('/')
 def index():
-    """Serves the main HTML page."""
-    return render_template('index.html')
+    # Serve the static index.html for the frontend
+    return app.send_static_file('index.html')
+
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    # Serve static assets (images, CSS, JS)
+    static_folder = app.static_folder or 'static'
+    return send_from_directory(static_folder, filename)
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -338,4 +345,5 @@ def chat():
 if __name__ == '__main__':
     # Add both JSON files to 'extra_files' to trigger auto-reload on change
     json_files = ['office_hours.json', 'full_subjects_study_plan.json']
-    app.run(debug=True, host='0.0.0.0', port=5000, extra_files=json_files)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=True, host='0.0.0.0', port=port, extra_files=json_files)

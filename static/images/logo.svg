@@ -1,7 +1,0 @@
-<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <!-- Background -->
-    <rect width="100" height="100" rx="20" fill="#E6332A"/>
-
-    <!-- Initials "H" -->
-    <path d="M25 25 V 75 H 35 V 55 H 65 V 75 H 75 V 25 H 65 V 45 H 35 V 25 Z" fill="#FFFFFF"/>
-</svg> 
