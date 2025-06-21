@@ -13,14 +13,19 @@ app.secret_key = 'htu_info_bot_secret_key_2024'
 
 def load_data():
     """Loads data from JSON files."""
+    # Construct the absolute path to the data files
+    project_root = os.path.dirname(os.path.abspath(__file__))
+    subjects_path = os.path.join(project_root, 'full_subjects_study_plan.json')
+    office_hours_path = os.path.join(project_root, 'office_hours.json')
+    
     try:
-        with open('full_subjects_study_plan.json', 'r', encoding='utf-8') as f:
+        with open(subjects_path, 'r', encoding='utf-8') as f:
             subjects_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         subjects_data = {}
     
     try:
-        with open('office_hours.json', 'r', encoding='utf-8') as f:
+        with open(office_hours_path, 'r', encoding='utf-8') as f:
             office_hours_data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         office_hours_data = [] # Now a list
