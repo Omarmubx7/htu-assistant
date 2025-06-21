@@ -424,8 +424,18 @@
                     appendBotMessageTypewriter(response);
                 }, 800);
             }
+            function normalizeName(name) {
+                if (typeof name !== 'string') return '';
+                name = name.toLowerCase().trim();
+                // Replace all dash-like characters with '-'
+                name = name.replace(/[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D\u2013\u2014\u2015]/g, '-');
+                name = name.replace(/\s+/g, ' ');
+                // Remove accents/diacritics
+                name = name.normalize('NFD').replace(/[00-6f]/g, '');
+                return name;
+            }
             function processMessage(message) {
-                const cleanMessage = message.toLowerCase().trim();
+                const cleanMessage = normalizeName(message);
                 if (cleanMessage.includes('hello') || cleanMessage.includes('hi') || cleanMessage.includes('hey')) {
                     return "👋 <span style='color:#E31E24;font-weight:bold;'>Hello!</span> How can I help you today?";
                 }
@@ -447,12 +457,12 @@
                 }
                 // Disambiguation for professor names
                 const matches = officeHoursData.filter(prof =>
-                    prof.name.toLowerCase().includes(cleanMessage)
+                    normalizeName(prof.name).includes(cleanMessage)
                 );
                 if (matches.length > 1) {
                     let response = `<span style='color:#E31E24;'>Found multiple professors:</span><br>`;
                     for (const prof of matches) {
-                        response += `<button class="quick-btn message-link">${prof.name.toLowerCase()}</button> `;
+                        response += `<button class="quick-btn message-link">${prof.name}</button> `;
                     }
                     response += `<br><span style='color:#fff;'>Click a name.</span>`;
                     return response;
@@ -482,13 +492,13 @@
                 }
                 // Fuzzy search for partial matches
                 const fuzzyMatches = officeHoursData.filter(prof => {
-                    const profName = prof.name.toLowerCase();
+                    const profName = normalizeName(prof.name);
                     return cleanMessage.split(' ').some(word => word.length > 2 && profName.includes(word));
                 });
                 if (fuzzyMatches.length > 1) {
                     let response = `<span style='color:#E31E24;'>Found similar professors:</span><br>`;
                     for (const prof of fuzzyMatches) {
-                        response += `<button class="quick-btn message-link">${prof.name.toLowerCase()}</button> `;
+                        response += `<button class="quick-btn message-link">${prof.name}</button> `;
                     }
                     response += `<br><span style='color:#fff;'>Click a name.</span>`;
                     return response;

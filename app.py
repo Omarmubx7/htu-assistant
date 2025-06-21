@@ -5,6 +5,7 @@ from difflib import SequenceMatcher
 from datetime import datetime
 import random
 from typing import Optional
+import unicodedata
 
 app = Flask(__name__)
 app.secret_key = 'htu_info_bot_secret_key_2024'
@@ -97,6 +98,16 @@ def calculate_similarity(a, b):
     """Calculates the similarity between two strings."""
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
+def normalize_name(name):
+    if not isinstance(name, str):
+        return ''
+    # Lowercase, strip, replace all dashes with '-', collapse spaces, remove diacritics
+    name = name.lower().strip()
+    name = re.sub(r'[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D\u2013\u2014\u2015]', '-', name)  # all dash-like chars
+    name = re.sub(r'\s+', ' ', name)
+    name = ''.join(c for c in unicodedata.normalize('NFKD', name) if not unicodedata.combining(c))
+    return name
+
 def find_subject_info_smart(subject_code):
     """Finds subject information with fuzzy matching."""
     for major, levels in subjects_data.items():
@@ -136,28 +147,21 @@ def find_subject_info_smart(subject_code):
 
 def find_professor_office_hours_smart(professor_name):
     """Finds professor information from the structured list."""
-    clean_input = professor_name.lower().strip()
-    
+    clean_input = normalize_name(professor_name)
     potential_matches = []
-    
     for prof in office_hours_data:
-        # Normalize name from data, handling cases where name might be missing
-        prof_name_from_data = prof.get('name', '').lower().strip()
+        prof_name_from_data = normalize_name(prof.get('name', ''))
         if not prof_name_from_data:
             continue
-
         similarity = calculate_similarity(clean_input, prof_name_from_data)
-        
         if clean_input == prof_name_from_data:
             prof['match_type'] = 'exact'
             prof['similarity'] = 1.0
             return [prof] # Exact match found, return immediately
-
         if clean_input in prof_name_from_data or similarity > 0.6:
             prof['match_type'] = 'contains' if clean_input in prof_name_from_data else 'fuzzy'
             prof['similarity'] = similarity
             potential_matches.append(prof)
-
     potential_matches.sort(key=lambda x: x.get('similarity', 0), reverse=True)
     return potential_matches
 
