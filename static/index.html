@@ -342,12 +342,15 @@
                 const messageBubble = document.createElement('div');
                 messageBubble.classList.add('message-bubble');
 
-                let processedMessage = data.text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                const messageText = (sender === 'user') ? data : data.text;
+                if (typeof messageText !== 'string') return; // Failsafe
+
+                let processedMessage = messageText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                 processedMessage = processedMessage.replace(/\n/g, '<br>');
                 messageBubble.innerHTML = processedMessage;
                 messageContainer.appendChild(messageBubble);
 
-                if (data.buttons && data.buttons.length > 0) {
+                if (sender === 'bot' && data.buttons && data.buttons.length > 0) {
                     const buttonsContainer = document.createElement('div');
                     buttonsContainer.className = 'message-buttons';
                     data.buttons.forEach(btnText => {
@@ -356,7 +359,6 @@
                         button.textContent = btnText;
                         button.onclick = () => {
                             sendMessage(btnText);
-                            // Visually disable buttons after click
                             buttonsContainer.querySelectorAll('.quick-action-btn').forEach(btn => {
                                 btn.disabled = true;
                                 btn.style.opacity = '0.6';

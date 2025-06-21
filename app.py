@@ -331,7 +331,7 @@ Try asking me about any course or professor!
     elif intent == 'unknown':
         response = {
             'text': "🤔 I'm not sure I understood. Here are some things you can ask me:",
-            'buttons': ["Find a course", "Find a professor", "Help"]
+            'buttons': ["Find a Course", "Find a Professor", "View a Study Plan"]
         }
         return response
 
