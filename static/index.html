@@ -299,11 +299,21 @@
             function sendMessage(message) {
                 appendMessage(message, 'user');
                 showTypingIndicator(true);
-                setTimeout(() => {
-                    const response = processMessage(message);
+                fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: message }),
+                })
+                .then(response => response.json())
+                .then(data => {
                     showTypingIndicator(false);
-                    appendMessage(response, 'bot');
-                }, 800);
+                    appendMessage(data.response, 'bot');
+                })
+                .catch((error) => {
+                    showTypingIndicator(false);
+                    console.error('Error:', error);
+                    appendMessage('Sorry, something went wrong. Please try again.', 'bot');
+                });
             }
             function appendMessage(message, sender) {
                 const messageContainer = document.createElement('div');
@@ -312,15 +322,12 @@
                 messageBubble.classList.add('message-bubble');
                 let processedMessage = message.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
                 processedMessage = processedMessage.replace(/\n/g, '<br>');
-                if (sender === 'bot') {
-                    processedMessage = processedMessage.replace(/\b([A-Z]{2,3}\d{3})\b/g, '<button class="quick-btn message-link">$1</button>');
-                    processedMessage = processedMessage.replace(/\b(Dr\.?|Eng\.?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)/g, '<button class="quick-btn message-link">$&</button>');
-                }
+                // No quick actions to create from bot messages in this version
                 messageBubble.innerHTML = processedMessage;
                 messageContainer.appendChild(messageBubble);
                 chatWindow.appendChild(messageContainer);
                 chatWindow.scrollTop = chatWindow.scrollHeight;
-                setupQuickActions();
+                // Since there are no new buttons, we don't need to call setupQuickActions here
             }
             function showTypingIndicator(show) {
                 typingIndicator.style.display = show ? 'flex' : 'none';
@@ -328,7 +335,8 @@
                     chatWindow.scrollTop = chatWindow.scrollHeight;
                 }
             }
-            setupQuickActions();
+            // Initial call if there were any static buttons
+            // setupQuickActions();
         });
     </script>
 </body>
