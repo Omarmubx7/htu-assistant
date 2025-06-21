@@ -1,0 +1,52 @@
+{
+    "Computer Science": {
+        "Level 1": {
+            "CS101": {
+                "name": "Computer Skills II",
+                "description": "Development of essential computer skills including spreadsheets and databases.",
+                "credits": 3
+            },
+            "CS102": {
+                "name": "Introduction to Computing",
+                "description": "Basic principles of computer systems and programming logic.",
+                "credits": 3
+            }
+        },
+        "Level 2": {
+            "CS201": {
+                "name": "Data Structures & Algorithms",
+                "description": "Covers arrays, linked lists, stacks, queues, trees, graphs, and sorting/searching algorithms.",
+                "credits": 3
+            },
+            "CS202": {
+                "name": "Database Systems",
+                "description": "Relational databases, SQL, and database design concepts.",
+                "credits": 3
+            }
+        },
+        "Level 3": {
+            "CS301": {
+                "name": "Operating Systems",
+                "description": "Processes, threads, memory management, and file systems.",
+                "credits": 3
+            },
+            "CS302": {
+                "name": "Computer Networks",
+                "description": "TCP/IP model, routing, switching, and network protocols.",
+                "credits": 3
+            }
+        },
+        "Level 4": {
+            "CS401": {
+                "name": "Software Engineering",
+                "description": "Software development lifecycle, design patterns, and project management.",
+                "credits": 3
+            },
+            "CS402": {
+                "name": "Artificial Intelligence",
+                "description": "Introduction to AI techniques including search, logic, and machine learning foundations.",
+                "credits": 3
+            }
+        }
+    }
+} 
