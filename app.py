@@ -171,6 +171,27 @@ def find_professor_office_hours_smart(professor_name):
     potential_matches.sort(key=lambda x: x.get('similarity', 0), reverse=True)
     return potential_matches
 
+def format_schedule(schedule_dict):
+    """Formats the schedule dictionary into a readable string."""
+    if not schedule_dict:
+        return "No schedule information available."
+    
+    formatted_lines = []
+    days_order = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    
+    # Sort the days according to the defined order
+    sorted_days = sorted(schedule_dict.keys(), key=lambda day: days_order.index(day) if day in days_order else -1)
+
+    for day in sorted_days:
+        times = schedule_dict[day]
+        if times and times.strip().lower() not in ['none', 'n/a', 'office hours']:
+            formatted_lines.append(f"**{day}:** {times}")
+
+    if not formatted_lines:
+        return "No specific office hours are listed."
+        
+    return "\n".join(formatted_lines)
+
 def extract_intent(user_message):
     """Extracts user intent from the message."""
     message_lower = user_message.lower()
@@ -236,8 +257,6 @@ Try asking me about any course or professor!
         
         if subject_result['match_type'] == 'fuzzy':
             response += f"💡 *Did you mean {subject_result['original_code']} instead of your search?*"
-        else:
-            response += f"🎯 This course is part of {subject_result['level']} in the {subject_result['major']} program."
         
         response += "\n\n💡 **You can also ask:**\n• Which professors teach this course?\n• Are there prerequisites?"
         return response
@@ -254,36 +273,22 @@ Try asking me about any course or professor!
         details = professor_results[0]
         prof_display_name = details.get('name', 'N/A')
 
-        response = f"👨‍🏫 **Professor {prof_display_name}**\n\n"
-
-        if details.get('department'):
-            response += f"**Department:** {details.get('department')}\n"
-        if details.get('office'):
-            response += f"**Office:** {details.get('office')}\n"
-        if details.get('email'):
-            response += f"**Email:** {details.get('email')}\n"
-
-        schedule = details.get('office_hours')
-        if schedule and isinstance(schedule, dict):
-            office_hours_output = ""
-            days_order = {day: i for i, day in enumerate(["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])}
-            sorted_schedule = sorted(schedule.items(), key=lambda item: days_order.get(item[0], 99))
-
-            for day, times in sorted_schedule:
-                if times:
-                    office_hours_output += f"• **{day}:** {times}\n"
-
-            if office_hours_output:
-                response += "\n**Office Hours Schedule:**\n" + office_hours_output
-            else:
-                response += "\nNo specific office hours are listed for this professor."
+        if details.get('match_type') == 'fuzzy':
+            response = f"🤖 I found someone with a similar name: **{prof_display_name}**.\n\n"
         else:
-            response += "\nNo schedule information found for this professor."
-        
-        response += "\n\n💡 **You can also ask:**\n• What courses does this professor teach?\n• Who else is in this department?"
-        return response
+            response = f"👨‍🏫 Here is the information for **{prof_display_name}**:\n\n"
 
-    else:
+        response += f"**Department:** {details.get('department', 'N/A')}\n"
+        response += f"**Email:** {details.get('email', 'N/A')}\n"
+        response += f"**Office:** {details.get('office_number', 'N/A')}\n\n"
+
+        schedule = format_schedule(details.get('schedule', {}))
+        response += f"**Office Hours:**\n{schedule}"
+        
+        response += f"\n\n💡 You can now ask me for this professor's **email**, **office**, or **schedule** separately."
+        return response
+    
+    elif intent == 'unknown':
         suggestions = [
             "🤔 I'm not sure I understood. Here are some things you can ask me:",
             "❓ Let me help you find what you're looking for. Try one of these:",
@@ -313,38 +318,57 @@ def static_files(filename):
 
 @app.route('/chat', methods=['POST'])
 def chat():
-    """Handles chat messages."""
-    if not request.json or 'message' not in request.json:
-        return jsonify({'response': 'Invalid request.'})
-    
-    user_message = request.json.get('message', '').strip()
-    if not user_message:
-        return jsonify({'response': 'Please enter a message.'})
+    user_message = request.json.get('message', '')
+    message_lower = user_message.lower().strip()
+    response = ""
 
-    intent = extract_intent(user_message)
-
-    # Prioritize subject code search if pattern matches
-    subject_match = re.search(r'\b[A-Z]{2,3}\d{3}\b', user_message.upper())
-    if subject_match:
-        subject_code = subject_match.group()
-        subject_result = find_subject_info_smart(subject_code)
-        if subject_result:
-            response = generate_smart_response(intent, user_message, subject_result=subject_result)
+    # Check for follow-up questions about the last professor
+    if context.last_professor:
+        prof_name = context.last_professor.get('name', 'The professor')
+        # Check for specific follow-up intents
+        if any(word in message_lower for word in ['email', 'contact']):
+            email = context.last_professor.get('email', 'I could not find an email for them.')
+            response = f"📧 The email for **{prof_name}** is: {email}"
+            return jsonify({'response': response})
+        if any(word in message_lower for word in ['office', 'location', 'room']):
+            office = context.last_professor.get('office_number', 'I could not find their office number.')
+            response = f"📍 The office for **{prof_name}** is: {office}"
+            return jsonify({'response': response})
+        if any(word in message_lower for word in ['schedule', 'hours', 'when', 'times']):
+            schedule = format_schedule(context.last_professor.get('schedule', {}))
+            if "No schedule" in schedule or "No specific" in schedule:
+                 response = f"🗓️ I couldn't find a specific schedule for **{prof_name}**."
+            else:
+                 response = f"🗓️ Here is the schedule for **{prof_name}**:\n{schedule}"
             return jsonify({'response': response})
 
-    # Fallback to professor search
-    professor_results = find_professor_office_hours_smart(user_message)
-    if professor_results:
-        response = generate_smart_response(intent, user_message, professor_results=professor_results)
-        return jsonify({'response': response})
-    
-    # Handle greeting or help intents if no specific results found
-    if intent in ['greeting', 'help']:
-        response = generate_smart_response(intent, user_message)
-        return jsonify({'response': response})
+    # --- Regular Processing ---
+    intent = extract_intent(message_lower)
+    subject_code_match = re.search(r'([a-zA-Z]{2,4}\s*\d{3})', user_message)
 
-    # Default fallback response
-    response = generate_smart_response('unknown', user_message)
+    professor_results = None
+    subject_result = None
+
+    if subject_code_match:
+        subject_result = find_subject_info_smart(subject_code_match.group(1))
+    else:
+        # Assuming the query is for a professor if no subject code is found.
+        # This can be improved with more sophisticated intent detection.
+        professor_results = find_professor_office_hours_smart(user_message)
+
+    # Update context after a successful search
+    if professor_results and len(professor_results) == 1:
+        context.last_professor = professor_results[0]
+        context.last_subject = None  # Clear subject context
+    elif subject_result:
+        context.last_subject = subject_result
+        context.last_professor = None  # Clear professor context
+    else:
+        # If no clear result or multiple matches, clear context to avoid incorrect follow-ups
+        context.last_professor = None
+        context.last_subject = None
+
+    response = generate_smart_response(intent, user_message, subject_result, professor_results)
     return jsonify({'response': response})
 
 if __name__ == '__main__':
