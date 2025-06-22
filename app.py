@@ -346,13 +346,6 @@ def index():
     # Serve the React frontend
     return app.send_static_file('index.html')
 
-@app.route('/<path:path>')
-def catch_all(path):
-    # Handle React Router paths by serving index.html
-    if not path.startswith('api/'):
-        return app.send_static_file('index.html')
-    return "Not found", 404
-
 @app.route('/api/chat', methods=['POST'])
 def chat():
     data = request.json
