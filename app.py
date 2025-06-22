@@ -216,10 +216,17 @@ def find_study_plan(major, level_query):
 
 def format_schedule(schedule_dict):
     """Formats the schedule dictionary into a readable string."""
-    print(f"DEBUG: format_schedule received: {schedule_dict}")  # Debug line
+    print(f"DEBUG: format_schedule received: {schedule_dict}")
+    print(f"DEBUG: Type of schedule_dict: {type(schedule_dict)}")
+    
     if not schedule_dict:
-        print("DEBUG: schedule_dict is empty or None")  # Debug line
+        print("DEBUG: schedule_dict is empty or None")
         return "No schedule information available."
+    
+    # Handle case where schedule_dict might be a string instead of dict
+    if isinstance(schedule_dict, str):
+        print(f"DEBUG: schedule_dict is a string: {schedule_dict}")
+        return f"Schedule: {schedule_dict}"
     
     formatted_lines = []
     days = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
@@ -227,17 +234,20 @@ def format_schedule(schedule_dict):
     for day in days:
         if day in schedule_dict:
             times = schedule_dict[day]
-            print(f"DEBUG: Found {day}: {times}")  # Debug line
+            print(f"DEBUG: Found {day}: {times}")
             if times and str(times).strip().lower() not in ['none', 'n/a', 'office hours']:
-                # Format each line for better readability, without bullets
+                # Handle Unicode characters properly
+                if isinstance(times, str):
+                    # Replace Unicode en dash with regular dash
+                    times = times.replace('\u2013', '-')
                 formatted_lines.append(f"**{day}:** {times}")
 
     if not formatted_lines:
-        print("DEBUG: No formatted lines were created")  # Debug line
+        print("DEBUG: No formatted lines were created")
         return "No specific office hours are listed."
         
     result = "\n".join(formatted_lines)
-    print(f"DEBUG: Final result: {result}")  # Debug line
+    print(f"DEBUG: Final result: {result}")
     return result
 
 def extract_intent(user_message):
@@ -323,6 +333,9 @@ Try asking me about any course or professor!
         # Handle a single match
         details = professor_results[0]
         prof_display_name = details.get('name', 'N/A')
+        
+        print(f"DEBUG: Professor details: {details}")
+        print(f"DEBUG: Office hours from details: {details.get('office_hours', {})}")
 
         if details.get('match_type') == 'fuzzy':
             response = f"🤖 I found someone with a similar name: **{prof_display_name}**.\n\n"
