@@ -216,7 +216,9 @@ def find_study_plan(major, level_query):
 
 def format_schedule(schedule_dict):
     """Formats the schedule dictionary into a readable string."""
+    print(f"DEBUG: format_schedule received: {schedule_dict}")  # Debug line
     if not schedule_dict:
+        print("DEBUG: schedule_dict is empty or None")  # Debug line
         return "No schedule information available."
     
     formatted_lines = []
@@ -225,14 +227,18 @@ def format_schedule(schedule_dict):
     for day in days:
         if day in schedule_dict:
             times = schedule_dict[day]
+            print(f"DEBUG: Found {day}: {times}")  # Debug line
             if times and str(times).strip().lower() not in ['none', 'n/a', 'office hours']:
                 # Format each line for better readability, without bullets
                 formatted_lines.append(f"**{day}:** {times}")
 
     if not formatted_lines:
+        print("DEBUG: No formatted lines were created")  # Debug line
         return "No specific office hours are listed."
         
-    return "\n".join(formatted_lines)
+    result = "\n".join(formatted_lines)
+    print(f"DEBUG: Final result: {result}")  # Debug line
+    return result
 
 def extract_intent(user_message):
     """Extracts user intent from the message."""
