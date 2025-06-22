@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 import json
 import re
 from difflib import SequenceMatcher
@@ -9,6 +10,7 @@ import unicodedata
 import os
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
+CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173'])  # Allow React dev server
 app.secret_key = 'htu_info_bot_secret_key_2024'
 
 def load_data():
@@ -337,40 +339,43 @@ Try asking me about any course or professor!
 
 @app.route('/')
 def index():
-    # Serve the static index.html for the frontend
+    # Serve the React frontend
     return app.send_static_file('index.html')
 
-@app.route('/static/<path:filename>')
-def static_files(filename):
-    # Serve static assets (images, CSS, JS)
-    static_folder = app.static_folder or 'static'
-    return send_from_directory(static_folder, filename)
+@app.route('/<path:path>')
+def catch_all(path):
+    # Handle React Router paths by serving index.html
+    if not path.startswith('api/'):
+        return app.send_static_file('index.html')
+    return "Not found", 404
 
-@app.route('/chat', methods=['POST'])
+@app.route('/api/chat', methods=['POST'])
 def chat():
-    user_message = request.json.get('message', '')
+    data = request.json
+    user_message = data.get('message', '')
+    current_professor = data.get('current_professor')
     message_lower = user_message.lower().strip()
     response = ""
 
-    # Check for follow-up questions about the last professor
-    if context.last_professor:
-        prof_name = context.last_professor.get('name', 'The professor')
+    # Check for follow-up questions about the current professor
+    if current_professor:
+        prof_name = current_professor.get('name', 'The professor')
         # Check for specific follow-up intents
         if any(word in message_lower for word in ['email', 'contact']):
-            email = context.last_professor.get('email', 'I could not find an email for them.')
+            email = current_professor.get('email', 'I could not find an email for them.')
             response = f"📧 The email for **{prof_name}** is: {email}"
-            return jsonify({'response': {'text': response}})
+            return jsonify({'response': response, 'professor': current_professor})
         if any(word in message_lower for word in ['office', 'location', 'room']):
-            office = context.last_professor.get('office_number', 'I could not find their office number.')
+            office = current_professor.get('office_number', 'I could not find their office number.')
             response = f"📍 The office for **{prof_name}** is: {office}"
-            return jsonify({'response': {'text': response}})
+            return jsonify({'response': response, 'professor': current_professor})
         if any(word in message_lower for word in ['schedule', 'hours', 'when', 'times']):
-            schedule = format_schedule(context.last_professor.get('schedule', {}))
+            schedule = format_schedule(current_professor.get('schedule', {}))
             if "No schedule" in schedule or "No specific" in schedule:
                  response = f"🗓️ I couldn't find a specific schedule for **{prof_name}**."
             else:
                  response = f"🗓️ Here is the schedule for **{prof_name}**:\n{schedule}"
-            return jsonify({'response': {'text': response}})
+            return jsonify({'response': response, 'professor': current_professor})
 
     # --- Regular Processing ---
     intent = extract_intent(message_lower)
@@ -388,9 +393,9 @@ def chat():
             response_text = f"📚 Here is the **{plan_result['level']}** plan for **{plan_result['major']}**:\n\n"
             for code, details in plan_result['plan'].items():
                 response_text += f"• **{code}**: {details['name']} ({details['credits']} credits)\n"
-            response = {'text': response_text}
+            response = response_text
         else:
-            response = {'text': f"Sorry, I couldn't find a study plan for '{major_query}'."}
+            response = f"Sorry, I couldn't find a study plan for '{major_query}'."
         return jsonify({'response': response})
 
     if subject_code_match:
@@ -413,7 +418,17 @@ def chat():
         context.last_subject = None
 
     response_data = generate_smart_response(intent, user_message, subject_result, professor_results)
-    return jsonify({'response': response_data})
+    
+    # Return response in the format expected by React frontend
+    if professor_results and len(professor_results) == 1:
+        return jsonify({
+            'response': response_data.get('text', response_data),
+            'professor': professor_results[0]
+        })
+    else:
+        return jsonify({
+            'response': response_data.get('text', response_data)
+        })
 
 if __name__ == '__main__':
     # Add both JSON files to 'extra_files' to trigger auto-reload on change
