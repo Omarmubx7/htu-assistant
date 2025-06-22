@@ -8,6 +8,7 @@ import random
 from typing import Optional
 import unicodedata
 import os
+import copy
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app, origins=[
@@ -166,20 +167,20 @@ def find_professor_office_hours_smart(professor_name):
         if not prof_name_from_data:
             continue
         
-        # Create a copy to avoid modifying the original data
-        prof_copy = prof.copy()
+        # Create a deep copy to prevent any chance of data corruption
+        prof_copy = copy.deepcopy(prof)
         
         similarity = calculate_similarity(clean_input, prof_name_from_data)
         
         if clean_input == prof_name_from_data:
             prof_copy['match_type'] = 'exact'
             prof_copy['similarity'] = 1.0
-            return [prof_copy] # Exact match found, return a copy
+            return [prof_copy]
 
         if clean_input in prof_name_from_data or similarity > 0.6:
             prof_copy['match_type'] = 'contains' if clean_input in prof_name_from_data else 'fuzzy'
             prof_copy['similarity'] = similarity
-            potential_matches.append(prof_copy) # Append the copy
+            potential_matches.append(prof_copy)
             
     potential_matches.sort(key=lambda x: x.get('similarity', 0), reverse=True)
     return potential_matches
@@ -306,7 +307,7 @@ I can help you with:
 • Find prerequisites and program information
 
 👨‍🏫 **Professor Office Hours:**
-• Search by professor name (e.g., Dr. Ahmed Bataineh)
+• Search by professor name (e.g., Ahmed Bataineh)
 • Get office hours, locations, and contact info
 • Find department and email information
 
