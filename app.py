@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, render_template
 from flask_cors import CORS
 import json
 import re
@@ -343,8 +343,11 @@ Try asking me about any course or professor!
 
 @app.route('/')
 def index():
-    # Serve the React frontend
-    return app.send_static_file('index.html')
+    return render_template('chat.html')
+
+@app.route('/chat')
+def chat_page():
+    return render_template('chat.html')
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
