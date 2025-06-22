@@ -88,6 +88,17 @@ function App() {
     setIsDarkMode(!isDarkMode)
   }
 
+  const renderMessageText = (text) => {
+    // This function finds text surrounded by ** and makes it bold
+    const parts = text.split(/(\*\*.*?\*\*)/g);
+    return parts.map((part, i) => {
+        if (part.startsWith('**') && part.endsWith('**')) {
+            return <strong key={i}>{part.slice(2, -2)}</strong>;
+        }
+        return part;
+    });
+  };
+
   return (
     <div className={`app ${isDarkMode ? 'dark' : 'light'}`}>
       <div className="chat-container">
@@ -127,7 +138,7 @@ function App() {
                 transition={{ duration: 0.3 }}
               >
                 <div className="message-content">
-                  <div className="message-text">{message.text}</div>
+                  <div className="message-text">{renderMessageText(message.text)}</div>
                   <div className="message-time">
                     {message.timestamp.toLocaleTimeString([], { 
                       hour: '2-digit', 

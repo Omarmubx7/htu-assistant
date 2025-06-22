@@ -226,8 +226,8 @@ def format_schedule(schedule_dict):
         if day in schedule_dict:
             times = schedule_dict[day]
             if times and str(times).strip().lower() not in ['none', 'n/a', 'office hours']:
-                # Format each line for better readability in chat
-                formatted_lines.append(f"&bull; **{day}:** {times}")
+                # Format each line for better readability, without bullets
+                formatted_lines.append(f"**{day}:** {times}")
 
     if not formatted_lines:
         return "No specific office hours are listed."
