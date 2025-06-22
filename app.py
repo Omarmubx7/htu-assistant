@@ -442,16 +442,19 @@ def chat():
 
     response_data = generate_smart_response(intent, user_message, subject_result, professor_results)
     
-    # Return response in the format expected by React frontend
+    # Construct the JSON response for the frontend
+    json_response = {
+        'response': response_data.get('text', "Sorry, something went wrong.")
+    }
+
+    if 'buttons' in response_data:
+        json_response['buttons'] = response_data['buttons']
+
+    # If a single professor was found, add it to the response for context
     if professor_results and len(professor_results) == 1:
-        return jsonify({
-            'response': response_data.get('text', response_data),
-            'professor': professor_results[0]
-        })
-    else:
-        return jsonify({
-            'response': response_data.get('text', response_data)
-        })
+        json_response['professor'] = professor_results[0]
+    
+    return jsonify(json_response)
 
 if __name__ == '__main__':
     # Add both JSON files to 'extra_files' to trigger auto-reload on change

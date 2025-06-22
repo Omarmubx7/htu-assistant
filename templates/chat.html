@@ -80,6 +80,37 @@
             .logo-section h1 { font-size: 1.2rem; }
             .message-content { max-width: 85%; }
         }
+        
+        .message-buttons {
+            margin-top: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .message-button {
+            background-color: rgba(102, 126, 234, 0.2);
+            border: 1px solid #667eea;
+            color: #667eea;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .app.dark .message-button {
+            background-color: rgba(118, 75, 162, 0.3);
+            border-color: #764ba2;
+            color: #e0e0e0;
+        }
+        .message-button:hover {
+            background-color: #667eea;
+            color: #fff;
+        }
+        .app.dark .message-button:hover {
+            background-color: #764ba2;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -112,26 +143,38 @@
                 scrollToBottom();
             }, [messages]);
 
-            const sendMessage = async () => {
-                if (!inputMessage.trim()) return;
+            const sendMessage = async (messageText) => {
+                const textToSend = messageText || inputMessage;
+                if (!textToSend.trim()) return;
 
-                const userMessage = { id: Date.now(), text: inputMessage, sender: 'user', timestamp: new Date() };
+                const userMessage = { id: Date.now(), text: textToSend, sender: 'user', timestamp: new Date() };
                 setMessages(prev => [...prev, userMessage]);
-                const messageToSend = inputMessage;
-                setInputMessage('');
+                
+                if(!messageText) {
+                    setInputMessage('');
+                }
+                
                 setIsLoading(true);
 
                 try {
                     const response = await axios.post("{{ url_for('chat') }}", {
-                        message: messageToSend,
+                        message: textToSend,
                         current_professor: currentProfessor
                     });
 
-                    const botMessage = { id: Date.now() + 1, text: response.data.response, sender: 'bot', timestamp: new Date() };
+                    const botMessage = { 
+                        id: Date.now() + 1, 
+                        text: response.data.response, 
+                        sender: 'bot', 
+                        timestamp: new Date(),
+                        buttons: response.data.buttons || []
+                    };
                     setMessages(prev => [...prev, botMessage]);
 
                     if (response.data.professor) {
                         setCurrentProfessor(response.data.professor);
+                    } else if (!response.data.buttons || response.data.buttons.length === 0) {
+                        setCurrentProfessor(null);
                     }
                 } catch (error) {
                     console.error('Error sending message:', error);
@@ -178,6 +221,18 @@
                                 React.createElement(motion.div, { key: message.id, className: `message ${message.sender}`, initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 } },
                                     React.createElement('div', { className: 'message-content' },
                                         React.createElement('div', { className: 'message-text' }, renderMessageText(message.text)),
+                                        
+                                        message.buttons && message.buttons.length > 0 &&
+                                            React.createElement('div', { className: 'message-buttons' },
+                                                message.buttons.map((buttonText, index) =>
+                                                    React.createElement('button', {
+                                                        key: index,
+                                                        className: 'message-button',
+                                                        onClick: () => sendMessage(buttonText)
+                                                    }, buttonText)
+                                                )
+                                            ),
+
                                         React.createElement('div', { className: 'message-time' }, message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
                                     )
                                 )
@@ -191,7 +246,7 @@
                     React.createElement(motion.div, { className: 'input-container', initial: { y: 50, opacity: 0 }, animate: { y: 0, opacity: 1 } },
                         React.createElement('div', { className: 'input-wrapper' },
                             React.createElement('textarea', { value: inputMessage, onChange: e => setInputMessage(e.target.value), onKeyPress: handleKeyPress, placeholder: "Type your message...", rows: "1", className: "message-input" }),
-                            React.createElement(motion.button, { className: 'send-button', onClick: sendMessage, disabled: !inputMessage.trim() || isLoading },
+                            React.createElement(motion.button, { className: 'send-button', onClick: () => sendMessage(), disabled: !inputMessage.trim() || isLoading },
                                 React.createElement('svg', { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2" },
                                     React.createElement('line', { x1: "22", y1: "2", x2: "11", y2: "13" }),
                                     React.createElement('polygon', { points: "22,2 15,22 11,13 2,9" })
