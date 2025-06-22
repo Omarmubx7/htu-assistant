@@ -11,15 +11,24 @@ import os
 import copy
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
+
+# More permissive CORS configuration
 CORS(app, origins=[
     'http://localhost:5173', 
     'http://127.0.0.1:5173', 
-    'https://omarmubaidin.pythonanywhere.com'
-])  # Allow React dev server and deployed site
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://omarmubaidin.pythonanywhere.com',
+    'https://omarmubx7.github.io',
+    'https://htu-assistant.com',
+    'https://*.github.io',
+    'https://*.pythonanywhere.com'
+], methods=['GET', 'POST', 'OPTIONS'], allow_headers=['Content-Type', 'Authorization'])
+
 app.secret_key = 'htu_info_bot_secret_key_2024'
 
 def load_data():
-    """Loads data from JSON files."""
+    """Loads data from JSON files with better error handling."""
     # Construct the absolute path to the data files
     project_root = os.path.dirname(os.path.abspath(__file__))
     subjects_path = os.path.join(project_root, 'full_subjects_study_plan.json')
@@ -28,14 +37,30 @@ def load_data():
     try:
         with open(subjects_path, 'r', encoding='utf-8') as f:
             subjects_data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+        print(f"✅ Successfully loaded subjects data from {subjects_path}")
+    except FileNotFoundError:
+        print(f"❌ Subjects file not found: {subjects_path}")
+        subjects_data = {}
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON decode error in subjects file: {e}")
+        subjects_data = {}
+    except PermissionError as e:
+        print(f"❌ Permission error accessing subjects file: {e}")
         subjects_data = {}
     
     try:
         with open(office_hours_path, 'r', encoding='utf-8') as f:
             office_hours_data = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        office_hours_data = [] # Now a list
+        print(f"✅ Successfully loaded office hours data from {office_hours_path}")
+    except FileNotFoundError:
+        print(f"❌ Office hours file not found: {office_hours_path}")
+        office_hours_data = []
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON decode error in office hours file: {e}")
+        office_hours_data = []
+    except PermissionError as e:
+        print(f"❌ Permission error accessing office hours file: {e}")
+        office_hours_data = []
     
     return subjects_data, office_hours_data
 
@@ -386,107 +411,146 @@ def index():
 def chat_page():
     return render_template('chat.html')
 
+@app.route('/health')
+def health_check():
+    """Health check endpoint to verify the API is accessible."""
+    try:
+        # Check if data files are accessible
+        subjects_count = len(subjects_data) if subjects_data else 0
+        office_hours_count = len(office_hours_data) if office_hours_data else 0
+        
+        return jsonify({
+            'status': 'healthy',
+            'message': 'HTU Assistant API is running',
+            'data_loaded': {
+                'subjects': subjects_count,
+                'professors': office_hours_count
+            },
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'API error: {str(e)}',
+            'timestamp': datetime.now().isoformat()
+        }), 500
+
 @app.route('/api/chat', methods=['POST'])
 def chat():
-    data = request.json
-    user_message = data.get('message', '')
-    current_professor = data.get('current_professor')
-    message_lower = user_message.lower().strip()
-    response = ""
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
+        user_message = data.get('message', '')
+        current_professor = data.get('current_professor')
+        
+        if not user_message.strip():
+            return jsonify({'error': 'Empty message provided'}), 400
+            
+        message_lower = user_message.lower().strip()
+        response = ""
 
-    # Check for follow-up questions about the current professor
-    if current_professor:
-        prof_name = current_professor.get('name', 'The professor')
-        # Check for specific follow-up intents
-        if 'who else' in message_lower and 'department' in message_lower:
-            department = current_professor.get('department')
-            if department:
-                colleagues = find_professors_in_department(department, prof_name)
-                if colleagues:
-                    response = f"👥 Here are other professors in the **{department}** department:\n\n"
-                    for colleague in colleagues[:10]: # Limit to 10 to avoid huge lists
-                        response += f"• {colleague}\n"
+        # Check for follow-up questions about the current professor
+        if current_professor:
+            prof_name = current_professor.get('name', 'The professor')
+            # Check for specific follow-up intents
+            if 'who else' in message_lower and 'department' in message_lower:
+                department = current_professor.get('department')
+                if department:
+                    colleagues = find_professors_in_department(department, prof_name)
+                    if colleagues:
+                        response = f"👥 Here are other professors in the **{department}** department:\n\n"
+                        for colleague in colleagues[:10]: # Limit to 10 to avoid huge lists
+                            response += f"• {colleague}\n"
+                    else:
+                        response = f"I couldn't find any other professors in the **{department}** department."
                 else:
-                    response = f"I couldn't find any other professors in the **{department}** department."
+                    response = f"I'm not sure which department **{prof_name}** is in."
+                return jsonify({'response': response, 'professor': current_professor})
+
+            if any(word in message_lower for word in ['school', 'college', 'faculty']):
+                school = current_professor.get('school', 'I could not find their school.')
+                response = f"🏫 **{prof_name}** is in the: {school}"
+                return jsonify({'response': response, 'professor': current_professor})
+            if any(word in message_lower for word in ['email', 'contact']):
+                email = current_professor.get('email', 'I could not find an email for them.')
+                response = f"📧 The email for **{prof_name}** is: {email}"
+                return jsonify({'response': response, 'professor': current_professor})
+            if any(word in message_lower for word in ['office', 'location', 'room']):
+                office = current_professor.get('office', 'I could not find their office number.')
+                response = f"📍 The office for **{prof_name}** is: {office}"
+                return jsonify({'response': response, 'professor': current_professor})
+            if any(word in message_lower for word in ['schedule', 'hours', 'when', 'times']):
+                schedule = format_schedule(current_professor.get('office_hours', {}))
+                if "No schedule" in schedule or "No specific" in schedule:
+                     response = f"🗓️ I couldn't find a specific schedule for **{prof_name}**."
+                else:
+                     response = f"🗓️ Here is the schedule for **{prof_name}**:\n{schedule}"
+                return jsonify({'response': response, 'professor': current_professor})
+
+        # --- Regular Processing ---
+        intent = extract_intent(message_lower)
+        subject_code_match = re.search(r'([a-zA-Z]{2,4}\s*\d{3})', user_message)
+        study_plan_match = re.search(r'(show|tell|give|what is|find)\s+(me\s+)?(the\s+)?(first|second|third|fourth|fifth|1st|2nd|3rd|4th|5th)\s+year\s+(plan\s+)?(for\s+)?([a-zA-Z\s]+)', message_lower)
+
+        professor_results = None
+        subject_result = None
+        
+        if study_plan_match:
+            level_query = study_plan_match.group(4)
+            major_query = study_plan_match.group(7)
+            plan_result = find_study_plan(major_query, level_query)
+            if plan_result:
+                response_text = f"📚 Here is the **{plan_result['level']}** plan for **{plan_result['major']}**:\n\n"
+                for code, details in plan_result['plan'].items():
+                    response_text += f"• **{code}**: {details['name']} ({details['credits']} credits)\n"
+                response = response_text
             else:
-                response = f"I'm not sure which department **{prof_name}** is in."
-            return jsonify({'response': response, 'professor': current_professor})
+                response = f"Sorry, I couldn't find a study plan for '{major_query}'."
+            return jsonify({'response': response})
 
-        if any(word in message_lower for word in ['school', 'college', 'faculty']):
-            school = current_professor.get('school', 'I could not find their school.')
-            response = f"🏫 **{prof_name}** is in the: {school}"
-            return jsonify({'response': response, 'professor': current_professor})
-        if any(word in message_lower for word in ['email', 'contact']):
-            email = current_professor.get('email', 'I could not find an email for them.')
-            response = f"📧 The email for **{prof_name}** is: {email}"
-            return jsonify({'response': response, 'professor': current_professor})
-        if any(word in message_lower for word in ['office', 'location', 'room']):
-            office = current_professor.get('office', 'I could not find their office number.')
-            response = f"📍 The office for **{prof_name}** is: {office}"
-            return jsonify({'response': response, 'professor': current_professor})
-        if any(word in message_lower for word in ['schedule', 'hours', 'when', 'times']):
-            schedule = format_schedule(current_professor.get('office_hours', {}))
-            if "No schedule" in schedule or "No specific" in schedule:
-                 response = f"🗓️ I couldn't find a specific schedule for **{prof_name}**."
-            else:
-                 response = f"🗓️ Here is the schedule for **{prof_name}**:\n{schedule}"
-            return jsonify({'response': response, 'professor': current_professor})
-
-    # --- Regular Processing ---
-    intent = extract_intent(message_lower)
-    subject_code_match = re.search(r'([a-zA-Z]{2,4}\s*\d{3})', user_message)
-    study_plan_match = re.search(r'(show|tell|give|what is|find)\s+(me\s+)?(the\s+)?(first|second|third|fourth|fifth|1st|2nd|3rd|4th|5th)\s+year\s+(plan\s+)?(for\s+)?([a-zA-Z\s]+)', message_lower)
-
-    professor_results = None
-    subject_result = None
-    
-    if study_plan_match:
-        level_query = study_plan_match.group(4)
-        major_query = study_plan_match.group(7)
-        plan_result = find_study_plan(major_query, level_query)
-        if plan_result:
-            response_text = f"📚 Here is the **{plan_result['level']}** plan for **{plan_result['major']}**:\n\n"
-            for code, details in plan_result['plan'].items():
-                response_text += f"• **{code}**: {details['name']} ({details['credits']} credits)\n"
-            response = response_text
+        if subject_code_match:
+            subject_result = find_subject_info_smart(subject_code_match.group(1))
         else:
-            response = f"Sorry, I couldn't find a study plan for '{major_query}'."
-        return jsonify({'response': response})
+            # Assuming the query is for a professor if no subject code is found.
+            # This can be improved with more sophisticated intent detection.
+            professor_results = find_professor_office_hours_smart(user_message)
 
-    if subject_code_match:
-        subject_result = find_subject_info_smart(subject_code_match.group(1))
-    else:
-        # Assuming the query is for a professor if no subject code is found.
-        # This can be improved with more sophisticated intent detection.
-        professor_results = find_professor_office_hours_smart(user_message)
+        # Update context after a successful search
+        if professor_results and len(professor_results) == 1:
+            context.last_professor = professor_results[0]
+            context.last_subject = None  # Clear subject context
+        elif subject_result:
+            context.last_subject = subject_result
+            context.last_professor = None  # Clear professor context
+        else:
+            # If no clear result or multiple matches, clear context to avoid incorrect follow-ups
+            context.last_professor = None
+            context.last_subject = None
 
-    # Update context after a successful search
-    if professor_results and len(professor_results) == 1:
-        context.last_professor = professor_results[0]
-        context.last_subject = None  # Clear subject context
-    elif subject_result:
-        context.last_subject = subject_result
-        context.last_professor = None  # Clear professor context
-    else:
-        # If no clear result or multiple matches, clear context to avoid incorrect follow-ups
-        context.last_professor = None
-        context.last_subject = None
+        response_data = generate_smart_response(intent, user_message, subject_result, professor_results)
+        
+        # Construct the JSON response for the frontend
+        json_response = {
+            'response': response_data.get('text', "Sorry, something went wrong.")
+        }
 
-    response_data = generate_smart_response(intent, user_message, subject_result, professor_results)
-    
-    # Construct the JSON response for the frontend
-    json_response = {
-        'response': response_data.get('text', "Sorry, something went wrong.")
-    }
+        if 'buttons' in response_data:
+            json_response['buttons'] = response_data['buttons']
 
-    if 'buttons' in response_data:
-        json_response['buttons'] = response_data['buttons']
-
-    # If a single professor was found, add it to the response for context
-    if professor_results and len(professor_results) == 1:
-        json_response['professor'] = professor_results[0]
-    
-    return jsonify(json_response)
+        # If a single professor was found, add it to the response for context
+        if professor_results and len(professor_results) == 1:
+            json_response['professor'] = professor_results[0]
+        
+        return jsonify(json_response)
+        
+    except Exception as e:
+        print(f"❌ Error in chat endpoint: {str(e)}")
+        return jsonify({
+            'response': "I'm sorry, I encountered an error processing your request. Please try again.",
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
     # Add both JSON files to 'extra_files' to trigger auto-reload on change

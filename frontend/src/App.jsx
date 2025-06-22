@@ -3,6 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion'
 import axios from 'axios'
 import './App.css'
 
+// Configure API base URL based on environment
+const API_BASE_URL = import.meta.env.PROD 
+  ? 'https://omarmubaidin.pythonanywhere.com' 
+  : '';
+
+// Configure axios defaults
+axios.defaults.baseURL = API_BASE_URL;
+axios.defaults.timeout = 10000; // 10 second timeout
+
 function App() {
   const [messages, setMessages] = useState([
     {
@@ -15,6 +24,7 @@ function App() {
   const [inputMessage, setInputMessage] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isConnected, setIsConnected] = useState(true)
   const messagesEndRef = useRef(null)
   const [currentProfessor, setCurrentProfessor] = useState(null)
 
@@ -25,6 +35,28 @@ function App() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Check API health on component mount
+  useEffect(() => {
+    const checkHealth = async () => {
+      try {
+        const response = await axios.get('/health')
+        console.log('✅ API Health Check:', response.data)
+        setIsConnected(true)
+      } catch (error) {
+        console.error('❌ API Health Check Failed:', error)
+        setIsConnected(false)
+        setMessages(prev => [...prev, {
+          id: Date.now(),
+          text: "⚠️ Warning: I'm having trouble connecting to the server. Some features may not work properly.",
+          sender: 'bot',
+          timestamp: new Date()
+        }])
+      }
+    }
+    
+    checkHealth()
+  }, [])
 
   const normalizeName = (name) => {
     return name.toLowerCase().replace(/\s+/g, ' ').trim()
@@ -63,15 +95,45 @@ function App() {
       if (response.data.professor) {
         setCurrentProfessor(response.data.professor)
       }
+      
+      // Handle buttons if provided
+      if (response.data.buttons && response.data.buttons.length > 0) {
+        const buttonsMessage = {
+          id: Date.now() + 2,
+          text: "Please select one of the following options:",
+          sender: 'bot',
+          timestamp: new Date(),
+          buttons: response.data.buttons
+        }
+        setMessages(prev => [...prev, buttonsMessage])
+      }
+      
     } catch (error) {
       console.error('Error sending message:', error)
-      const errorMessage = {
+      let errorMessage = "I'm sorry, I'm having trouble connecting to the server right now. Please try again later."
+      
+      if (error.response) {
+        // Server responded with error status
+        if (error.response.status === 400) {
+          errorMessage = "I couldn't understand your request. Please try rephrasing your question."
+        } else if (error.response.status === 500) {
+          errorMessage = "I encountered an internal error. Please try again in a moment."
+        } else if (error.response.data && error.response.data.error) {
+          errorMessage = `Error: ${error.response.data.error}`
+        }
+      } else if (error.request) {
+        // Network error
+        errorMessage = "I can't reach the server right now. Please check your internet connection and try again."
+        setIsConnected(false)
+      }
+      
+      const errorBotMessage = {
         id: Date.now() + 1,
-        text: "I'm sorry, I'm having trouble connecting to the server right now. Please try again later.",
+        text: errorMessage,
         sender: 'bot',
         timestamp: new Date()
       }
-      setMessages(prev => [...prev, errorMessage])
+      setMessages(prev => [...prev, errorBotMessage])
     } finally {
       setIsLoading(false)
     }
@@ -112,7 +174,12 @@ function App() {
           <div className="header-content">
             <div className="logo-section">
               <div className="logo">🎓</div>
-              <h1>Athar Assistant</h1>
+              <div className="title-section">
+                <h1>Athar Assistant</h1>
+                <div className={`connection-status ${isConnected ? 'connected' : 'disconnected'}`}>
+                  {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+                </div>
+              </div>
             </div>
             <button 
               className="theme-toggle"
