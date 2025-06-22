@@ -220,15 +220,14 @@ def format_schedule(schedule_dict):
         return "No schedule information available."
     
     formatted_lines = []
-    days_order = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-    
-    # Sort the days according to the defined order
-    sorted_days = sorted(schedule_dict.keys(), key=lambda day: days_order.index(day) if day in days_order else -1)
+    days = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 
-    for day in sorted_days:
-        times = schedule_dict[day]
-        if times and times.strip().lower() not in ['none', 'n/a', 'office hours']:
-            formatted_lines.append(f"**{day}:** {times}")
+    for day in days:
+        if day in schedule_dict:
+            times = schedule_dict[day]
+            if times and str(times).strip().lower() not in ['none', 'n/a', 'office hours']:
+                # Format each line for better readability in chat
+                formatted_lines.append(f"&bull; **{day}:** {times}")
 
     if not formatted_lines:
         return "No specific office hours are listed."
@@ -329,7 +328,7 @@ Try asking me about any course or professor!
         response += f"**Email:** {details.get('email', 'N/A')}\n"
         response += f"**Office:** {details.get('office', 'N/A')}\n\n"
 
-        schedule = format_schedule(details.get('schedule', {}))
+        schedule = format_schedule(details.get('office_hours', {}))
         response += f"**Office Hours:**\n{schedule}"
         
         response += f"\n\n💡 You can now ask me for this professor's **email**, **office**, or **schedule** separately."
@@ -372,7 +371,7 @@ def chat():
             response = f"📍 The office for **{prof_name}** is: {office}"
             return jsonify({'response': response, 'professor': current_professor})
         if any(word in message_lower for word in ['schedule', 'hours', 'when', 'times']):
-            schedule = format_schedule(current_professor.get('schedule', {}))
+            schedule = format_schedule(current_professor.get('office_hours', {}))
             if "No schedule" in schedule or "No specific" in schedule:
                  response = f"🗓️ I couldn't find a specific schedule for **{prof_name}**."
             else:
