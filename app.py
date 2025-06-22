@@ -326,7 +326,7 @@ Try asking me about any course or professor!
 
         response += f"**Department:** {details.get('department', 'N/A')}\n"
         response += f"**Email:** {details.get('email', 'N/A')}\n"
-        response += f"**Office:** {details.get('office_number', 'N/A')}\n\n"
+        response += f"**Office:** {details.get('office', 'N/A')}\n\n"
 
         schedule = format_schedule(details.get('schedule', {}))
         response += f"**Office Hours:**\n{schedule}"
@@ -363,7 +363,7 @@ def chat():
             response = f"📧 The email for **{prof_name}** is: {email}"
             return jsonify({'response': response, 'professor': current_professor})
         if any(word in message_lower for word in ['office', 'location', 'room']):
-            office = current_professor.get('office_number', 'I could not find their office number.')
+            office = current_professor.get('office', 'I could not find their office number.')
             response = f"📍 The office for **{prof_name}** is: {office}"
             return jsonify({'response': response, 'professor': current_professor})
         if any(word in message_lower for word in ['schedule', 'hours', 'when', 'times']):
