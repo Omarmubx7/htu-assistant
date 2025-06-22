@@ -10,7 +10,11 @@ import unicodedata
 import os
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
-CORS(app, origins=['http://localhost:5173', 'http://127.0.0.1:5173'])  # Allow React dev server
+CORS(app, origins=[
+    'http://localhost:5173', 
+    'http://127.0.0.1:5173', 
+    'https://omarmubaidin.pythonanywhere.com'
+])  # Allow React dev server and deployed site
 app.secret_key = 'htu_info_bot_secret_key_2024'
 
 def load_data():
