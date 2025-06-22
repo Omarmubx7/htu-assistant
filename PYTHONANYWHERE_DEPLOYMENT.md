@@ -74,19 +74,124 @@ os.environ['FLASK_ENV'] = 'production'
    - **URL**: `/static/`
    - **Directory**: `/home/YOUR_USERNAME/htu-assistant/static/`
 
-## 🚀 Step 7: Deploy Frontend
+## 🚀 Step 7: Deploy Frontend (Choose One Option)
 
-1. **Build the React frontend**:
+### Option A: Build Locally and Upload (Recommended)
+
+**On your local computer:**
+
+1. **Install Node.js** (if not already installed):
+   - **Windows**: Download from https://nodejs.org/
+   - **Mac**: `brew install node`
+   - **Linux**: `sudo apt install nodejs npm`
+
+2. **Build the React frontend**:
    ```bash
    cd frontend
    npm install
    npm run build
    ```
 
-2. **Copy build files** to static directory:
+3. **Upload the `dist` folder** to PythonAnywhere:
+   - Use the **Files** tab in PythonAnywhere
+   - Upload the entire `dist` folder to `/home/YOUR_USERNAME/htu-assistant/static/`
+
+### Option B: Use Pre-built Frontend (Simpler)
+
+1. **Create a simple static frontend** instead of building React:
    ```bash
-   cp -r dist/* ../static/
+   # In PythonAnywhere console
+   mkdir -p static
    ```
+
+2. **Create a simple HTML file** in `static/index.html`:
+   ```html
+   <!DOCTYPE html>
+   <html lang="en">
+   <head>
+       <meta charset="UTF-8">
+       <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>Athar Assistant</title>
+       <style>
+           body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+           .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 20px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+           .header { text-align: center; margin-bottom: 30px; }
+           .chat-container { border: 1px solid #ddd; border-radius: 10px; height: 400px; overflow-y: auto; padding: 20px; margin-bottom: 20px; }
+           .input-container { display: flex; gap: 10px; }
+           input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+           button { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; }
+           .message { margin-bottom: 10px; padding: 10px; border-radius: 5px; }
+           .user { background: #e3f2fd; text-align: right; }
+           .bot { background: #f5f5f5; }
+       </style>
+   </head>
+   <body>
+       <div class="container">
+           <div class="header">
+               <h1>🎓 Athar Assistant</h1>
+               <p>Your university chatbot for course information and professor office hours</p>
+           </div>
+           <div class="chat-container" id="chatContainer">
+               <div class="message bot">
+                   Hello! I'm Athar Assistant. I can help you find information about professors, courses, and more. How can I assist you today?
+               </div>
+           </div>
+           <div class="input-container">
+               <input type="text" id="messageInput" placeholder="Type your message here..." onkeypress="handleKeyPress(event)">
+               <button onclick="sendMessage()">Send</button>
+           </div>
+       </div>
+
+       <script>
+           async function sendMessage() {
+               const input = document.getElementById('messageInput');
+               const message = input.value.trim();
+               if (!message) return;
+
+               // Add user message
+               addMessage(message, 'user');
+               input.value = '';
+
+               try {
+                   const response = await fetch('/api/chat', {
+                       method: 'POST',
+                       headers: { 'Content-Type': 'application/json' },
+                       body: JSON.stringify({ message: message })
+                   });
+                   
+                   const data = await response.json();
+                   addMessage(data.response, 'bot');
+               } catch (error) {
+                   addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+               }
+           }
+
+           function addMessage(text, sender) {
+               const container = document.getElementById('chatContainer');
+               const div = document.createElement('div');
+               div.className = `message ${sender}`;
+               div.textContent = text;
+               container.appendChild(div);
+               container.scrollTop = container.scrollHeight;
+           }
+
+           function handleKeyPress(event) {
+               if (event.key === 'Enter') {
+                   sendMessage();
+               }
+           }
+       </script>
+   </body>
+   </html>
+   ```
+
+### Option C: Skip Frontend Build (API Only)
+
+If you only need the API functionality:
+
+1. **Skip the frontend build entirely**
+2. **Test the API directly** using tools like curl or Postman
+3. **The Flask app will still serve the API endpoints** at `/api/chat` and `/health`
 
 ## 🔄 Step 8: Reload Web App
 
@@ -130,6 +235,11 @@ os.environ['FLASK_ENV'] = 'production'
 - **Verify app.py** has proper error handling
 - **Test endpoints** individually
 
+### Issue 6: npm command not found
+- **Install Node.js** on your local machine first
+- **Use Option B** (simple HTML) instead of building React
+- **Or use Option C** (API only) if you don't need the frontend
+
 ## 📊 Monitoring
 
 1. **Check error logs** in Web tab
@@ -152,7 +262,7 @@ To update your deployed app:
    pip install -r requirements.txt
    ```
 
-3. **Rebuild frontend** (if changed):
+3. **Rebuild frontend** (if using Option A):
    ```bash
    cd frontend
    npm run build
