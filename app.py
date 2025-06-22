@@ -184,6 +184,24 @@ def find_professor_office_hours_smart(professor_name):
     potential_matches.sort(key=lambda x: x.get('similarity', 0), reverse=True)
     return potential_matches
 
+def find_professors_in_department(department_name, exclude_professor_name):
+    """Finds all professors in a given department, excluding one professor."""
+    if not department_name:
+        return []
+    
+    colleagues = []
+    normalized_exclude_name = normalize_name(exclude_professor_name)
+    
+    for prof in office_hours_data:
+        prof_department = prof.get('department', '')
+        prof_name = prof.get('name', '')
+        
+        # Check for department match (case-insensitive) and ensure it's not the excluded professor
+        if department_name.lower() == prof_department.lower() and normalize_name(prof_name) != normalized_exclude_name:
+            colleagues.append(prof_name)
+            
+    return colleagues
+
 def find_study_plan(major, level_query):
     """Finds the study plan for a given major and level."""
     normalized_major = major.lower().replace("engineering", "eng").strip()
@@ -343,9 +361,13 @@ Try asking me about any course or professor!
         response += f"**Office:** {details.get('office', 'N/A')}\n\n"
 
         schedule = format_schedule(details.get('office_hours', {}))
-        response += f"**Office Hours:**\n{schedule}"
+        response += f"**Office Hours Schedule:**\n{schedule}"
         
-        response += f"\n\n💡 You can now ask me for this professor's **email**, **office**, or **schedule** separately."
+        # New dynamic suggestions based on the screenshot
+        response += "\n\n💡 **You can also ask:**"
+        response += "\n• What courses does this professor teach?"
+        response += "\n• Who else is in this department?"
+
         return {'text': response}
     
     elif intent == 'unknown':
@@ -375,6 +397,20 @@ def chat():
     if current_professor:
         prof_name = current_professor.get('name', 'The professor')
         # Check for specific follow-up intents
+        if 'who else' in message_lower and 'department' in message_lower:
+            department = current_professor.get('department')
+            if department:
+                colleagues = find_professors_in_department(department, prof_name)
+                if colleagues:
+                    response = f"👥 Here are other professors in the **{department}** department:\n\n"
+                    for colleague in colleagues[:10]: # Limit to 10 to avoid huge lists
+                        response += f"• {colleague}\n"
+                else:
+                    response = f"I couldn't find any other professors in the **{department}** department."
+            else:
+                response = f"I'm not sure which department **{prof_name}** is in."
+            return jsonify({'response': response, 'professor': current_professor})
+
         if any(word in message_lower for word in ['school', 'college', 'faculty']):
             school = current_professor.get('school', 'I could not find their school.')
             response = f"🏫 **{prof_name}** is in the: {school}"
