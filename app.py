@@ -324,6 +324,7 @@ Try asking me about any course or professor!
         else:
             response = f"👨‍🏫 Here is the information for **{prof_display_name}**:\n\n"
 
+        response += f"**School:** {details.get('school', 'N/A')}\n"
         response += f"**Department:** {details.get('department', 'N/A')}\n"
         response += f"**Email:** {details.get('email', 'N/A')}\n"
         response += f"**Office:** {details.get('office', 'N/A')}\n\n"
@@ -358,6 +359,10 @@ def chat():
     if current_professor:
         prof_name = current_professor.get('name', 'The professor')
         # Check for specific follow-up intents
+        if any(word in message_lower for word in ['school', 'college', 'faculty']):
+            school = current_professor.get('school', 'I could not find their school.')
+            response = f"🏫 **{prof_name}** is in the: {school}"
+            return jsonify({'response': response, 'professor': current_professor})
         if any(word in message_lower for word in ['email', 'contact']):
             email = current_professor.get('email', 'I could not find an email for them.')
             response = f"📧 The email for **{prof_name}** is: {email}"
