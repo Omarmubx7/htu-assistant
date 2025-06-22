@@ -12,24 +12,28 @@ import copy
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
-# More permissive CORS configuration
+# Comprehensive CORS configuration for all deployment scenarios
 CORS(app, origins=[
     'http://localhost:5173', 
     'http://127.0.0.1:5173', 
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+    'http://localhost:5000',
+    'http://127.0.0.1:5000',
     'https://omarmubaidin.pythonanywhere.com',
     'https://omarmubx7.github.io',
     'https://htu-assistant.com',
     'https://*.github.io',
-    'https://*.pythonanywhere.com'
+    'https://*.pythonanywhere.com',
+    'https://*.vercel.app',
+    'https://*.railway.app',
+    'https://*.herokuapp.com'
 ], methods=['GET', 'POST', 'OPTIONS'], allow_headers=['Content-Type', 'Authorization'])
 
 app.secret_key = 'htu_info_bot_secret_key_2024'
 
 def load_data():
-    """Loads data from JSON files with better error handling."""
-    # Construct the absolute path to the data files
+    """Loads data from JSON files with comprehensive error handling."""
     project_root = os.path.dirname(os.path.abspath(__file__))
     subjects_path = os.path.join(project_root, 'full_subjects_study_plan.json')
     office_hours_path = os.path.join(project_root, 'office_hours.json')
@@ -137,6 +141,7 @@ def calculate_similarity(a, b):
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
 
 def normalize_name(name):
+    """Normalizes names for consistent matching."""
     if not isinstance(name, str):
         return ''
     # Lowercase, strip, replace all dashes with '-', collapse spaces, remove diacritics
@@ -148,6 +153,9 @@ def normalize_name(name):
 
 def find_subject_info_smart(subject_code):
     """Finds subject information with fuzzy matching."""
+    if not subjects_data:
+        return None
+        
     for major, levels in subjects_data.items():
         for level, subjects in levels.items():
             if subject_code.upper() in subjects:
@@ -185,8 +193,12 @@ def find_subject_info_smart(subject_code):
 
 def find_professor_office_hours_smart(professor_name):
     """Finds professor information from the structured list."""
+    if not office_hours_data:
+        return []
+        
     clean_input = normalize_name(professor_name)
     potential_matches = []
+    
     for prof in office_hours_data:
         prof_name_from_data = normalize_name(prof.get('name', ''))
         if not prof_name_from_data:
@@ -212,7 +224,7 @@ def find_professor_office_hours_smart(professor_name):
 
 def find_professors_in_department(department_name, exclude_professor_name):
     """Finds all professors in a given department, excluding one professor."""
-    if not department_name:
+    if not department_name or not office_hours_data:
         return []
     
     colleagues = []
@@ -223,106 +235,88 @@ def find_professors_in_department(department_name, exclude_professor_name):
         prof_name = prof.get('name', '')
         
         # Check for department match (case-insensitive) and ensure it's not the excluded professor
-        if department_name.lower() == prof_department.lower() and normalize_name(prof_name) != normalized_exclude_name:
+        if (prof_department.lower() == department_name.lower() and 
+            normalize_name(prof_name) != normalized_exclude_name):
             colleagues.append(prof_name)
-            
+    
     return colleagues
 
-def find_study_plan(major, level_query):
-    """Finds the study plan for a given major and level."""
-    normalized_major = major.lower().replace("engineering", "eng").strip()
-    
-    # Find the best matching major key
-    best_major_match = None
-    highest_similarity = 0.7 
-    for major_key in subjects_data.keys():
-        similarity = calculate_similarity(normalized_major, major_key.lower())
-        if similarity > highest_similarity:
-            highest_similarity = similarity
-            best_major_match = major_key
-
-    if not best_major_match:
+def find_study_plan(major_query, level_query):
+    """Finds study plan for a specific major and level."""
+    if not subjects_data:
         return None
-
-    # Match level query (first, second, etc.)
-    level_map = {
-        'first': 'First Year', '1st': 'First Year',
-        'second': 'Second Year', '2nd': 'Second Year',
-        'third': 'Third Year', '3rd': 'Third Year',
-        'fourth': 'Fourth Year', '4th': 'Fourth Year',
-        'fifth': 'Fifth Year', '5th': 'Fifth Year',
+        
+    # Normalize the major query
+    major_query = major_query.strip().lower()
+    level_query = level_query.strip().lower()
+    
+    # Map level queries to actual level names
+    level_mapping = {
+        'first': 'First Year',
+        '1st': 'First Year',
+        'second': 'Second Year', 
+        '2nd': 'Second Year',
+        'third': 'Third Year',
+        '3rd': 'Third Year',
+        'fourth': 'Fourth Year',
+        '4th': 'Fourth Year',
+        'fifth': 'Fifth Year',
+        '5th': 'Fifth Year'
     }
     
-    normalized_level = None
-    for key, value in level_map.items():
-        if key in level_query.lower():
-            normalized_level = value
-            break
-            
-    if not normalized_level or normalized_level not in subjects_data[best_major_match]:
-        return None
-        
-    plan = subjects_data[best_major_match][normalized_level]
-    return {'major': best_major_match, 'level': normalized_level, 'plan': plan}
+    target_level = level_mapping.get(level_query, level_query.title())
+    
+    # Find the major
+    for major, levels in subjects_data.items():
+        if major_query in major.lower():
+            if target_level in levels:
+                return {
+                    'major': major,
+                    'level': target_level,
+                    'plan': levels[target_level]
+                }
+    
+    return None
 
 def format_schedule(schedule_dict):
-    """Formats the schedule dictionary into a readable string."""
+    """Formats office hours schedule for display."""
     if not schedule_dict:
-        return "No schedule information available."
+        return "No schedule available."
     
-    # Handle case where schedule_dict might be a string instead of dict
-    if isinstance(schedule_dict, str):
-        return f"Schedule: {schedule_dict}"
+    formatted_schedule = ""
+    days_order = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
     
-    formatted_lines = []
-    days = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
-
-    for day in days:
-        if day in schedule_dict:
-            times = schedule_dict[day]
-            if times and str(times).strip().lower() not in ['none', 'n/a', 'office hours']:
-                # Handle Unicode characters properly
-                if isinstance(times, str):
-                    # Replace Unicode en dash with regular dash
-                    times = times.replace('\u2013', '-')
-                formatted_lines.append(f"**{day}:** {times}")
-
-    if not formatted_lines:
-        return "No specific office hours are listed."
-        
-    return "\n".join(formatted_lines)
+    for day in days_order:
+        if day in schedule_dict and schedule_dict[day]:
+            formatted_schedule += f"**{day}:** {schedule_dict[day]}\n"
+    
+    if not formatted_schedule:
+        return "No specific schedule available."
+    
+    return formatted_schedule.strip()
 
 def extract_intent(user_message):
     """Extracts user intent from the message."""
     message_lower = user_message.lower()
     
-    if any(word in message_lower for word in ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening']):
-        return 'greeting'
-    if any(word in message_lower for word in ['course', 'subject', 'class', 'credit', 'prerequisite', 'syllabus']):
-        return 'subject_info'
-    if any(word in message_lower for word in ['professor', 'doctor', 'dr', 'eng', 'teacher', 'instructor', 'office', 'hours', 'schedule']):
-        return 'professor_info'
-    if any(word in message_lower for word in ['help', 'what can you do', 'how to use', 'guide']):
+    if any(word in message_lower for word in ['help', 'what can you do', 'assist']):
         return 'help'
-    if any(word in message_lower for word in ['what', 'how', 'when', 'where', 'why', 'who']):
-        return 'general_question'
-    
-    return 'unknown'
+    elif any(word in message_lower for word in ['course', 'subject', 'cs', 'it', 'se']):
+        return 'course_search'
+    elif any(word in message_lower for word in ['professor', 'teacher', 'instructor', 'dr', 'dr.']):
+        return 'professor_search'
+    elif any(word in message_lower for word in ['plan', 'curriculum', 'year']):
+        return 'study_plan'
+    else:
+        return 'unknown'
 
 def generate_smart_response(intent, user_message, subject_result=None, professor_results=None):
-    """Generates a response based on intent and results."""
-    if intent == 'greeting':
-        greetings = [
-            "👋 Hello! I'm your HTU Info Assistant. How can I help you today?",
-            "🎓 Welcome to HTU Info Bot! I can help you find course information and professor office hours.",
-            "Hi there! I'm here to help with HTU academic information. What would you like to know?"
-        ]
-        return {'text': random.choice(greetings)}
+    """Generates intelligent responses based on intent and results."""
     
-    elif intent == 'help':
+    if intent == 'help':
         return {
             'text': """
-🤖 **HTU Info Bot - Smart Assistant**
+🤖 **HTU Assistant - Smart University Bot**
 
 I can help you with:
 
@@ -335,6 +329,10 @@ I can help you with:
 • Search by professor name (e.g., Ahmed Bataineh)
 • Get office hours, locations, and contact info
 • Find department and email information
+
+📋 **Study Plans:**
+• View curriculum for different years
+• Find course sequences and requirements
 
 💡 **Smart Features:**
 • Fuzzy matching for similar names/codes
@@ -389,7 +387,7 @@ Try asking me about any course or professor!
         schedule = format_schedule(details.get('office_hours', {}))
         response += f"**Office Hours Schedule:**\n{schedule}"
         
-        # New dynamic suggestions based on the screenshot
+        # Dynamic suggestions based on context
         response += "\n\n💡 **You can also ask:**"
         response += "\n• What courses does this professor teach?"
         response += "\n• Who else is in this department?"
@@ -399,17 +397,20 @@ Try asking me about any course or professor!
     elif intent == 'unknown':
         response = {
             'text': "🤔 I'm not sure I understood. Here are some things you can ask me:",
-            'buttons': ["Find a Course", "Find a Professor", "View a Study Plan"]
+            'buttons': ["Find a Course", "Find a Professor", "View a Study Plan", "Help"]
         }
         return response
 
+# Route handlers
 @app.route('/')
 def index():
-    return render_template('chat.html')
+    """Serve the main chat interface."""
+    return send_from_directory('static', 'index.html')
 
 @app.route('/chat')
 def chat_page():
-    return render_template('chat.html')
+    """Alternative chat page route."""
+    return send_from_directory('static', 'index.html')
 
 @app.route('/health')
 def health_check():
@@ -426,7 +427,8 @@ def health_check():
                 'subjects': subjects_count,
                 'professors': office_hours_count
             },
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'version': '2.0.0'
         })
     except Exception as e:
         return jsonify({
@@ -437,6 +439,7 @@ def health_check():
 
 @app.route('/api/chat', methods=['POST'])
 def chat():
+    """Main chat API endpoint."""
     try:
         data = request.json
         if not data:
@@ -514,7 +517,6 @@ def chat():
             subject_result = find_subject_info_smart(subject_code_match.group(1))
         else:
             # Assuming the query is for a professor if no subject code is found.
-            # This can be improved with more sophisticated intent detection.
             professor_results = find_professor_office_hours_smart(user_message)
 
         # Update context after a successful search
@@ -551,6 +553,48 @@ def chat():
             'response': "I'm sorry, I encountered an error processing your request. Please try again.",
             'error': str(e)
         }), 500
+
+@app.route('/api/professors')
+def get_professors():
+    """Get all professors for autocomplete or listing."""
+    try:
+        if not office_hours_data:
+            return jsonify({'professors': []})
+        
+        professors = []
+        for prof in office_hours_data:
+            professors.append({
+                'name': prof.get('name', ''),
+                'department': prof.get('department', ''),
+                'school': prof.get('school', '')
+            })
+        
+        return jsonify({'professors': professors})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/courses')
+def get_courses():
+    """Get all courses for autocomplete or listing."""
+    try:
+        if not subjects_data:
+            return jsonify({'courses': []})
+        
+        courses = []
+        for major, levels in subjects_data.items():
+            for level, subjects in levels.items():
+                for code, details in subjects.items():
+                    courses.append({
+                        'code': code,
+                        'name': details.get('name', ''),
+                        'major': major,
+                        'level': level,
+                        'credits': details.get('credits', '')
+                    })
+        
+        return jsonify({'courses': courses})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     # Add both JSON files to 'extra_files' to trigger auto-reload on change

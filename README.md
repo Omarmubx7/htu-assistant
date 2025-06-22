@@ -1,154 +1,220 @@
-# HTU Assistant 🤖
+# 🎓 Athar Assistant - HTU University Bot
 
-A smart, interactive chatbot for HTU (Al-Hussein Technical University) students and staff. Get instant access to course information, professor office hours, and academic resources.
+A smart, AI-powered chatbot for HTU (Al-Hussein Technical University) that helps students and staff find information about courses, professors, office hours, and study plans.
 
 ## ✨ Features
 
-- **🎓 Course Information**: Search for courses by code (e.g., CS201, CS101)
-- **👨‍🏫 Professor Office Hours**: Find professor schedules and contact information
-- **🌙 Dark Mode**: Toggle between light and dark themes
-- **📱 Responsive Design**: Works perfectly on desktop and mobile devices
-- **🔍 Smart Search**: Fuzzy matching for course codes and professor names
-- **💬 Interactive Chat**: Natural language processing for better user experience
+### 🤖 **Smart Chat Interface**
+- **Natural Language Processing**: Understands conversational queries
+- **Fuzzy Matching**: Finds professors and courses even with typos
+- **Context Awareness**: Remembers previous conversations
+- **Real-time Responses**: Instant answers to your questions
 
-## 🚀 Live Demo
+### 📚 **Course Information**
+- **Course Search**: Find courses by code (e.g., CS101, CS201)
+- **Detailed Information**: Credits, descriptions, prerequisites
+- **Study Plans**: View curriculum for different years and majors
+- **Program Information**: Complete course sequences
 
-Visit the live application: [HTU Assistant](https://yourusername.github.io/atharprojects/)
+### 👨‍🏫 **Professor Directory**
+- **Office Hours**: Complete schedules for all professors
+- **Contact Information**: Email addresses and office locations
+- **Department Info**: Find professors by department
+- **Smart Search**: Find professors by name variations
 
-## 🛠️ Technology Stack
+### 🎨 **Modern UI/UX**
+- **Dark/Light Mode**: Toggle between themes
+- **Responsive Design**: Works on all devices
+- **Autocomplete**: Smart suggestions as you type
+- **Quick Actions**: One-click access to common queries
+- **Real-time Status**: Connection health indicator
 
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **Styling**: Custom CSS with CSS Variables for theming
-- **Fonts**: Inter (Google Fonts)
-- **Icons**: SVG icons and emojis
-- **Hosting**: GitHub Pages
+### 🔧 **Technical Features**
+- **RESTful API**: Clean, documented endpoints
+- **CORS Support**: Works across all domains
+- **Error Handling**: Graceful error management
+- **Health Monitoring**: Built-in health checks
+- **Scalable Architecture**: Ready for production
+
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.8+
+- Git
+
+### Local Development
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Omarmubx7/htu-assistant.git
+   cd htu-assistant
+   ```
+
+2. **Install dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the application**
+   ```bash
+   python app.py
+   ```
+
+4. **Open your browser**
+   - Visit: `http://localhost:5000`
+   - The app will be running with full functionality
 
 ## 📁 Project Structure
 
 ```
-atharprojects/
-├── index.html              # Main application file
-├── README.md               # Project documentation
-├── app.py                  # Flask backend (for full version)
-├── templates/              # Flask templates
-├── static/                 # Static assets
-├── office_hours.json       # Professor data
-└── full_subjects_study_plan.json  # Course data
+htu-assistant/
+├── app.py                      # Main Flask application
+├── requirements.txt            # Python dependencies
+├── office_hours.json          # Professor data
+├── full_subjects_study_plan.json  # Course data
+├── static/
+│   ├── index.html             # Main frontend interface
+│   └── images/                # Static assets
+├── templates/                 # Flask templates (if needed)
+├── frontend/                  # React frontend (optional)
+├── deploy.py                  # Deployment automation script
+├── test_api.py               # API testing script
+└── README.md                 # This file
 ```
 
-## 🎯 How to Use
+## 🔌 API Endpoints
 
-1. **Course Information**: Type course codes like "CS101" or "CS201"
-2. **Professor Search**: Search by name like "Dr. Ahmed Bataineh"
-3. **Quick Actions**: Use the quick action buttons for common queries
-4. **Dark Mode**: Click the moon/sun icon to toggle themes
+### Core Endpoints
+- `GET /` - Main chat interface
+- `GET /health` - Health check endpoint
+- `POST /api/chat` - Main chat API
+- `GET /api/professors` - Get all professors
+- `GET /api/courses` - Get all courses
 
-## 🚀 Deployment
-
-### GitHub Pages (Current)
-
-This version is deployed on GitHub Pages as a static site:
-
-1. Push your code to GitHub
-2. Go to repository Settings > Pages
-3. Select "Deploy from a branch"
-4. Choose "main" branch and "/ (root)" folder
-5. Your site will be available at `https://yourusername.github.io/atharprojects/`
-
-### Custom Domain Setup
-
-To use a custom domain like "htu-assistant.com":
-
-1. **Purchase a domain** from a registrar (Namecheap, GoDaddy, etc.)
-2. **Add CNAME record**:
-   - Name: `@` or `www`
-   - Value: `yourusername.github.io`
-3. **In GitHub repository**:
-   - Go to Settings > Pages
-   - Add your custom domain in "Custom domain" field
-   - Check "Enforce HTTPS"
-4. **Create CNAME file** in your repository root:
-   ```
-   htu-assistant.com
-   ```
-
-### Full Flask Version
-
-For the complete Flask application with server-side processing:
-
-1. **Deploy to Heroku**:
-   ```bash
-   heroku create htu-assistant
-   git push heroku main
-   ```
-
-2. **Deploy to Railway**:
-   ```bash
-   railway login
-   railway init
-   railway up
-   ```
-
-3. **Deploy to Render**:
-   - Connect your GitHub repository
-   - Choose "Web Service"
-   - Set build command: `pip install -r requirements.txt`
-   - Set start command: `python app.py`
-
-## 🔧 Local Development
-
-### Static Version (GitHub Pages)
+### Example API Usage
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/atharprojects.git
-cd atharprojects
+# Health check
+curl https://your-domain.com/health
 
-# Open index.html in your browser
-# Or use a local server
-python -m http.server 8000
+# Send a message
+curl -X POST https://your-domain.com/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Find CS101"}'
 ```
 
-### Flask Version
+## 🌐 Deployment
+
+### Option 1: PythonAnywhere (Recommended)
+Follow the detailed guide in `PYTHONANYWHERE_DEPLOYMENT.md`
+
+### Option 2: Railway
+1. Connect your GitHub repository
+2. Railway will auto-detect Python
+3. Deploy with one click
+
+### Option 3: Heroku
+1. Create a `Procfile`:
+   ```
+   web: gunicorn app:app
+   ```
+2. Deploy using Heroku CLI or GitHub integration
+
+### Option 4: Vercel
+1. Install Vercel CLI
+2. Run `vercel` in project directory
+3. Follow prompts
+
+## 🧪 Testing
+
+### Run API Tests
 ```bash
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the application
-python app.py
-
-# Visit http://localhost:5000
+python test_api.py
 ```
+
+### Manual Testing
+1. Start the application
+2. Visit the health endpoint: `/health`
+3. Test chat functionality with various queries
+4. Verify all features work correctly
 
 ## 📊 Data Sources
 
-- **Course Information**: HTU Study Plans
-- **Professor Office Hours**: HTU Faculty Schedules
-- **Contact Information**: HTU Directory
+### Professor Data (`office_hours.json`)
+- **50+ Professors** from School of Computing and Informatics
+- **Complete office hours** for each professor
+- **Contact information** including emails and office locations
+- **Department affiliations** for easy searching
+
+### Course Data (`full_subjects_study_plan.json`)
+- **Comprehensive course catalog** for all programs
+- **Study plans** for different years and majors
+- **Course descriptions** and credit information
+- **Prerequisites** and program requirements
+
+## 🛠️ Customization
+
+### Adding New Professors
+1. Edit `office_hours.json`
+2. Add new professor entry with required fields
+3. Restart the application
+
+### Adding New Courses
+1. Edit `full_subjects_study_plan.json`
+2. Add course information to appropriate program
+3. Restart the application
+
+### Modifying the UI
+1. Edit `static/index.html`
+2. Customize CSS variables in `:root`
+3. Add new features to JavaScript
+
+## 🔒 Security Features
+
+- **CORS Protection**: Configured for secure cross-origin requests
+- **Input Validation**: All user inputs are validated
+- **Error Handling**: Graceful error responses
+- **Rate Limiting**: Built-in protection against abuse
+
+## 📈 Performance
+
+- **Fast Response Times**: Optimized for quick responses
+- **Efficient Data Loading**: JSON files loaded once at startup
+- **Minimal Dependencies**: Lightweight and fast
+- **Caching**: Built-in caching for better performance
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- HTU Faculty and Staff for providing data
-- Inter font family for beautiful typography
-- GitHub Pages for hosting
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ## 📞 Support
 
-For support or questions:
-- Create an issue on GitHub
-- Contact: [your-email@example.com]
+### Getting Help
+- **Documentation**: Check this README and deployment guides
+- **Issues**: Create an issue on GitHub
+- **Testing**: Use the provided test scripts
+
+### Common Issues
+- **CORS Errors**: Check CORS configuration in `app.py`
+- **Data Not Loading**: Verify JSON files are valid
+- **Deployment Issues**: Follow the deployment guides
+
+## 📄 License
+
+This project is open source and available under the MIT License.
+
+## 🙏 Acknowledgments
+
+- **HTU Faculty**: For providing course and professor data
+- **Open Source Community**: For the amazing tools and libraries
+- **Students**: For feedback and testing
 
 ---
 
-**Made with ❤️ for HTU Students** 
+**Made with ❤️ for HTU students and staff**
+
+**Live Demo**: [Your deployed URL here]
+**GitHub**: https://github.com/Omarmubx7/htu-assistant 

@@ -3,239 +3,890 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Athar Assistant</title>
-    <link rel="icon" type="image/png" href="/static/images/atharlogo.png">
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    <script src="https://unpkg.com/framer-motion@10/dist/framer-motion.js"></script>
+    <title>Athar Assistant - HTU University Bot</title>
+    <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
     <style>
-        /* Reset and base styles */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
+
+        :root {
+            --primary-color: #667eea;
+            --secondary-color: #764ba2;
+            --success-color: #4caf50;
+            --error-color: #f44336;
+            --warning-color: #ff9800;
+            --text-primary: #333;
+            --text-secondary: #666;
+            --bg-primary: #fff;
+            --bg-secondary: #f8f9fa;
+            --border-color: rgba(0, 0, 0, 0.1);
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            --border-radius: 20px;
+            --transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #8b9dc3;
+            --secondary-color: #9b6b9e;
+            --text-primary: #fff;
+            --text-secondary: #ccc;
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
                 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
                 sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-        /* App container */
-        .app {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: all 0.3s ease;
+            padding: 20px;
+            transition: var(--transition);
         }
-        .app.light { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .app.dark { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); }
-        /* Chat container */
+
         .chat-container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             height: 90vh;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            transition: all 0.3s ease;
+            transition: var(--transition);
         }
-        .app.dark .chat-container { background: rgba(30, 30, 50, 0.95); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3); }
-        /* Header */
-        .chat-header { padding: 20px 30px; border-bottom: 1px solid rgba(0, 0, 0, 0.1); background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
-        .app.dark .chat-header { border-bottom: 1px solid rgba(255, 255, 255, 0.1); background: rgba(40, 40, 60, 0.8); }
-        .header-content { display: flex; justify-content: space-between; align-items: center; }
-        .logo-section { display: flex; align-items: center; gap: 15px; }
-        .logo { font-size: 2rem; filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1)); }
-        .app.dark .logo { filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.1)); }
-        .logo-section h1 { font-size: 1.5rem; font-weight: 700; color: #333; margin: 0; }
-        .app.dark .logo-section h1 { color: #fff; }
-        .theme-toggle { background: none; border: none; font-size: 1.5rem; cursor: pointer; padding: 8px; border-radius: 50%; transition: all 0.3s ease; background: rgba(0, 0, 0, 0.05); }
-        .app.dark .theme-toggle { background: rgba(255, 255, 255, 0.1); }
-        .theme-toggle:hover { background: rgba(0, 0, 0, 0.1); transform: scale(1.1); }
-        .app.dark .theme-toggle:hover { background: rgba(255, 255, 255, 0.2); }
-        /* Messages container */
-        .messages-container { flex: 1; padding: 20px 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
-        .messages-container::-webkit-scrollbar { width: 6px; }
-        .messages-container::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); border-radius: 3px; }
-        .app.dark .messages-container::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
-        .messages-container::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 3px; }
-        .app.dark .messages-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); }
-        /* Messages */
-        .message { display: flex; margin-bottom: 10px; }
-        .message.user { justify-content: flex-end; }
-        .message.bot { justify-content: flex-start; }
-        .message-content { max-width: 70%; padding: 15px 20px; border-radius: 20px; position: relative; word-wrap: break-word; }
-        .message.user .message-content { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-bottom-right-radius: 5px; }
-        .message.bot .message-content { background: #f8f9fa; color: #333; border-bottom-left-radius: 5px; border: 1px solid rgba(0, 0, 0, 0.1); }
-        .app.dark .message.bot .message-content { background: #2a2a3a; color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); }
-        .message-text { font-size: 0.95rem; line-height: 1.5; margin-bottom: 5px; white-space: pre-wrap; }
-        .message-time { font-size: 0.75rem; opacity: 0.7; text-align: right; }
-        .message.user .message-time { text-align: right; }
-        .message.bot .message-time { text-align: left; }
-        /* Typing indicator */
-        .typing-indicator { display: flex; gap: 4px; padding: 10px 0; }
-        .typing-indicator span { width: 8px; height: 8px; border-radius: 50%; background: #999; animation: typing 1.4s infinite ease-in-out; }
-        .app.dark .typing-indicator span { background: #666; }
+
+        [data-theme="dark"] .chat-container {
+            background: rgba(30, 30, 50, 0.95);
+        }
+
+        .chat-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+        }
+
+        [data-theme="dark"] .chat-header {
+            background: rgba(40, 40, 60, 0.8);
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .title-section {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .logo-section h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+            transition: var(--transition);
+        }
+
+        .logo-section p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .connection-status {
+            font-size: 0.75rem;
+            font-weight: 500;
+            padding: 4px 12px;
+            border-radius: 12px;
+            display: inline-block;
+            width: fit-content;
+            transition: var(--transition);
+        }
+
+        .connection-status.connected {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success-color);
+        }
+
+        .connection-status.disconnected {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--error-color);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .theme-toggle, .help-button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: var(--transition);
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-primary);
+        }
+
+        [data-theme="dark"] .theme-toggle,
+        [data-theme="dark"] .help-button {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-toggle:hover, .help-button:hover {
+            background: rgba(0, 0, 0, 0.1);
+            transform: scale(1.1);
+        }
+
+        [data-theme="dark"] .theme-toggle:hover,
+        [data-theme="dark"] .help-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .messages-container {
+            flex: 1;
+            padding: 20px 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .messages-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .messages-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 3px;
+        }
+
+        [data-theme="dark"] .messages-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .messages-container::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        [data-theme="dark"] .messages-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .message {
+            display: flex;
+            margin-bottom: 10px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            position: relative;
+            word-wrap: break-word;
+            transition: var(--transition);
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-bottom-left-radius: 5px;
+            border: 1px solid var(--border-color);
+        }
+
+        .message-text {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 5px;
+            white-space: pre-wrap;
+        }
+
+        .message-time {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 10px;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
         .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
         .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes typing { 0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; } 40% { transform: scale(1); opacity: 1; } }
-        /* Input container */
-        .input-container { padding: 20px 30px; border-top: 1px solid rgba(0, 0, 0, 0.1); background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); }
-        .app.dark .input-container { border-top: 1px solid rgba(255, 255, 255, 0.1); background: rgba(40, 40, 60, 0.8); }
-        .input-wrapper { display: flex; gap: 15px; align-items: flex-end; }
-        .message-input { flex: 1; padding: 15px 20px; border: 2px solid rgba(0, 0, 0, 0.1); border-radius: 25px; font-size: 0.95rem; font-family: inherit; resize: none; outline: none; transition: all 0.3s ease; background: rgba(255, 255, 255, 0.9); color: #333; min-height: 50px; max-height: 120px; }
-        .app.dark .message-input { border: 2px solid rgba(255, 255, 255, 0.1); background: rgba(50, 50, 70, 0.9); color: #fff; }
-        .message-input:focus { border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-        .app.dark .message-input:focus { border-color: #764ba2; box-shadow: 0 0 0 3px rgba(118, 75, 162, 0.1); }
-        .message-input::placeholder { color: #999; }
-        .app.dark .message-input::placeholder { color: #666; }
-        /* Send button */
-        .send-button { width: 50px; height: 50px; border: none; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3); }
-        .send-button:hover:not(:disabled) { transform: scale(1.05); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4); }
-        .send-button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-        .send-button svg { transition: transform 0.3s ease; }
-        .send-button:hover:not(:disabled) svg { transform: translateX(2px); }
-        /* Responsive design */
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .quick-action-btn {
+            background: rgba(102, 126, 234, 0.1);
+            color: var(--primary-color);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: var(--transition);
+        }
+
+        .quick-action-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .input-container {
+            padding: 20px 30px;
+            border-top: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.8);
+            transition: var(--transition);
+        }
+
+        [data-theme="dark"] .input-container {
+            background: rgba(40, 40, 60, 0.8);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 25px;
+            font-size: 0.95rem;
+            resize: none;
+            outline: none;
+            transition: var(--transition);
+            font-family: inherit;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .message-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .message-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            font-size: 1.2rem;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .autocomplete-container {
+            position: relative;
+            flex: 1;
+        }
+
+        .autocomplete-list {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: var(--shadow);
+        }
+
+        .autocomplete-item {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .autocomplete-item:hover {
+            background: var(--bg-secondary);
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item .name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .autocomplete-item .details {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
         @media (max-width: 768px) {
-            .chat-container { height: 100vh; border-radius: 0; max-width: none; }
-            .chat-header { padding: 15px 20px; }
-            .messages-container { padding: 15px 20px; }
-            .input-container { padding: 15px 20px; }
-            .logo-section h1 { font-size: 1.2rem; }
-            .message-content { max-width: 85%; }
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .chat-header {
+                padding: 15px 20px;
+            }
+
+            .messages-container {
+                padding: 15px 20px;
+            }
+
+            .input-container {
+                padding: 15px 20px;
+            }
+
+            .logo-section h1 {
+                font-size: 1.4rem;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .header-controls {
+                gap: 10px;
+            }
+
+            .theme-toggle, .help-button {
+                font-size: 1.2rem;
+                padding: 6px;
+            }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div class="chat-container">
+        <!-- Header -->
+        <div class="chat-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="logo">🎓</div>
+                    <div class="title-section">
+                        <h1>Athar Assistant</h1>
+                        <p>Your smart university chatbot</p>
+                        <div class="connection-status" id="connectionStatus">🟢 Connected</div>
+                    </div>
+                </div>
+                <div class="header-controls">
+                    <button class="help-button" onclick="showHelp()" title="Help">❓</button>
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">🌙</button>
+                </div>
+            </div>
+        </div>
 
-    <script type="text/babel">
-        const { useState, useRef, useEffect } = React;
-        const { motion, AnimatePresence } = window.Motion;
+        <!-- Messages -->
+        <div class="messages-container" id="messagesContainer">
+            <div class="message bot">
+                <div class="message-content">
+                    <div class="message-text">Hello! I'm Athar Assistant, your university chatbot. I can help you find information about professors, courses, and more. How can I assist you today?</div>
+                    <div class="message-time" id="initialTime"></div>
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Find a Course')">📚 Find a Course</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Find a Professor')">👨‍🏫 Find a Professor</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Show me the first year plan for Computer Science')">📋 Study Plan</button>
+                        <button class="quick-action-btn" onclick="sendQuickMessage('Help')">❓ Help</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        function App() {
-            const [messages, setMessages] = useState([
-                {
-                    id: 1,
-                    text: "Hello! I'm Athar Assistant, your university chatbot. I can help you find information about professors, courses, and more. How can I assist you today?",
-                    sender: 'bot',
-                    timestamp: new Date()
+        <!-- Input -->
+        <div class="input-container">
+            <div class="input-wrapper">
+                <div class="autocomplete-container">
+                    <textarea
+                        id="messageInput"
+                        placeholder="Type your message here... (Try: CS101, Ahmed Bataineh, or 'show me the first year plan')"
+                        rows="1"
+                        class="message-input"
+                        onkeypress="handleKeyPress(event)"
+                        oninput="handleInput()"
+                    ></textarea>
+                    <div class="autocomplete-list" id="autocompleteList" style="display: none;"></div>
+                </div>
+                <button
+                    class="send-button"
+                    onclick="sendMessage()"
+                    id="sendButton"
+                >
+                    ➤
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isConnected = true;
+        let currentProfessor = null;
+        let allProfessors = [];
+        let allCourses = [];
+        let isDarkMode = localStorage.getItem('darkMode') === 'true';
+        let autocompleteTimeout;
+
+        // Initialize theme
+        document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+        updateThemeButton();
+
+        // Set initial time
+        document.getElementById('initialTime').textContent = new Date().toLocaleTimeString([], { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+
+        // Load autocomplete data
+        loadAutocompleteData();
+
+        // Check API health on page load
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch('/health');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ API Health Check:', data);
+                    updateConnectionStatus(true);
+                } else {
+                    throw new Error('Health check failed');
                 }
-            ]);
-            const [inputMessage, setInputMessage] = useState('');
-            const [isLoading, setIsLoading] = useState(false);
-            const [isDarkMode, setIsDarkMode] = useState(false);
-            const messagesEndRef = useRef(null);
-            const [currentProfessor, setCurrentProfessor] = useState(null);
+            } catch (error) {
+                console.error('❌ API Health Check Failed:', error);
+                updateConnectionStatus(false);
+                addMessage("⚠️ Warning: I'm having trouble connecting to the server. Some features may not work properly.", 'bot');
+            }
+        });
 
-            const scrollToBottom = () => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            };
-
-            useEffect(() => {
-                scrollToBottom();
-            }, [messages]);
-
-            const sendMessage = async () => {
-                if (!inputMessage.trim()) return;
-                const userMessage = { id: Date.now(), text: inputMessage, sender: 'user', timestamp: new Date() };
-                setMessages(prev => [...prev, userMessage]);
-                setInputMessage('');
-                setIsLoading(true);
-
-                try {
-                    const response = await axios.post('/api/chat', { message: inputMessage, current_professor: currentProfessor });
-                    const botMessage = { id: Date.now() + 1, text: response.data.response, sender: 'bot', timestamp: new Date() };
-                    setMessages(prev => [...prev, botMessage]);
-                    if (response.data.professor) {
-                        setCurrentProfessor(response.data.professor);
-                    }
-                } catch (error) {
-                    console.error('Error sending message:', error);
-                    const errorMessage = { id: Date.now() + 1, text: "I'm sorry, I'm having trouble connecting to the server right now. Please try again later.", sender: 'bot', timestamp: new Date() };
-                    setMessages(prev => [...prev, errorMessage]);
-                } finally {
-                    setIsLoading(false);
+        async function loadAutocompleteData() {
+            try {
+                // Load professors
+                const profResponse = await fetch('/api/professors');
+                if (profResponse.ok) {
+                    const profData = await profResponse.json();
+                    allProfessors = profData.professors || [];
                 }
-            };
 
-            const handleKeyPress = (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
+                // Load courses
+                const courseResponse = await fetch('/api/courses');
+                if (courseResponse.ok) {
+                    const courseData = await courseResponse.json();
+                    allCourses = courseData.courses || [];
                 }
-            };
-
-            const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
-
-            const renderMessageText = (text) => {
-                const parts = text.split(/(\*\*.*?\*\*)/g);
-                return parts.map((part, i) => {
-                    if (part.startsWith('**') && part.endsWith('**')) {
-                        return React.createElement('strong', { key: i }, part.slice(2, -2));
-                    }
-                    return part;
-                });
-            };
-
-            return React.createElement('div', { className: `app ${isDarkMode ? 'dark' : 'light'}` },
-                React.createElement('div', { className: 'chat-container' },
-                    React.createElement(motion.div, { className: 'chat-header', initial: { y: -50, opacity: 0 }, animate: { y: 0, opacity: 1 }, transition: { duration: 0.5 } },
-                        React.createElement('div', { className: 'header-content' },
-                            React.createElement('div', { className: 'logo-section' },
-                                React.createElement('div', { className: 'logo' }, '🎓'),
-                                React.createElement('h1', null, 'Athar Assistant')
-                            ),
-                            React.createElement(motion.button, { className: 'theme-toggle', onClick: toggleDarkMode, whileHover: { scale: 1.1 }, whileTap: { scale: 0.9 } }, isDarkMode ? '☀️' : '🌙')
-                        )
-                    ),
-                    React.createElement('div', { className: 'messages-container' },
-                        React.createElement(AnimatePresence, null,
-                            messages.map((message) =>
-                                React.createElement(motion.div, { key: message.id, className: `message ${message.sender}`, initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: -20 }, transition: { duration: 0.3 } },
-                                    React.createElement('div', { className: 'message-content' },
-                                        React.createElement('div', { className: 'message-text' }, renderMessageText(message.text)),
-                                        React.createElement('div', { className: 'message-time' }, message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
-                                    )
-                                )
-                            )
-                        ),
-                        isLoading && React.createElement(motion.div, { className: 'message bot', initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } },
-                            React.createElement('div', { className: 'message-content' },
-                                React.createElement('div', { className: 'typing-indicator' },
-                                    React.createElement('span'), React.createElement('span'), React.createElement('span')
-                                )
-                            )
-                        ),
-                        React.createElement('div', { ref: messagesEndRef })
-                    ),
-                    React.createElement(motion.div, { className: 'input-container', initial: { y: 50, opacity: 0 }, animate: { y: 0, opacity: 1 }, transition: { duration: 0.5, delay: 0.2 } },
-                        React.createElement('div', { className: 'input-wrapper' },
-                            React.createElement('textarea', { value: inputMessage, onChange: (e) => setInputMessage(e.target.value), onKeyPress: handleKeyPress, placeholder: "Type your message here...", rows: "1", className: "message-input" }),
-                            React.createElement(motion.button, { className: 'send-button', onClick: sendMessage, disabled: !inputMessage.trim() || isLoading, whileHover: { scale: 1.05 }, whileTap: { scale: 0.95 } },
-                                React.createElement('svg', { width: "20", height: "20", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2" },
-                                    React.createElement('line', { x1: "22", y1: "2", x2: "11", y2: "13" }),
-                                    React.createElement('polygon', { points: "22,2 15,22 11,13 2,9" })
-                                )
-                            )
-                        )
-                    )
-                )
-            );
+            } catch (error) {
+                console.error('Failed to load autocomplete data:', error);
+            }
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(App));
+        function updateConnectionStatus(connected) {
+            isConnected = connected;
+            const statusElement = document.getElementById('connectionStatus');
+            if (connected) {
+                statusElement.textContent = '🟢 Connected';
+                statusElement.className = 'connection-status connected';
+            } else {
+                statusElement.textContent = '🔴 Disconnected';
+                statusElement.className = 'connection-status disconnected';
+            }
+        }
+
+        function toggleTheme() {
+            isDarkMode = !isDarkMode;
+            document.documentElement.setAttribute('data-theme', isDarkMode ? 'dark' : 'light');
+            localStorage.setItem('darkMode', isDarkMode);
+            updateThemeButton();
+        }
+
+        function updateThemeButton() {
+            const themeButton = document.querySelector('.theme-toggle');
+            themeButton.textContent = isDarkMode ? '☀️' : '🌙';
+            themeButton.title = isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+        }
+
+        function showHelp() {
+            sendQuickMessage('Help');
+        }
+
+        function sendQuickMessage(message) {
+            const input = document.getElementById('messageInput');
+            input.value = message;
+            sendMessage();
+        }
+
+        function renderMessageText(text) {
+            // Enhanced text rendering with bold, links, and emojis
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+        }
+
+        function addMessage(text, sender, buttons = null) {
+            const container = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'message-text';
+            textDiv.innerHTML = renderMessageText(text);
+            
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = new Date().toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            contentDiv.appendChild(textDiv);
+            contentDiv.appendChild(timeDiv);
+
+            // Add quick action buttons if provided
+            if (buttons && buttons.length > 0) {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'quick-actions';
+                buttons.forEach(button => {
+                    const btn = document.createElement('button');
+                    btn.className = 'quick-action-btn';
+                    btn.textContent = button;
+                    btn.onclick = () => sendQuickMessage(button);
+                    actionsDiv.appendChild(btn);
+                });
+                contentDiv.appendChild(actionsDiv);
+            }
+            
+            messageDiv.appendChild(contentDiv);
+            container.appendChild(messageDiv);
+            
+            // Scroll to bottom with smooth animation
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        function showTypingIndicator() {
+            const container = document.getElementById('messagesContainer');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot';
+            typingDiv.id = 'typingIndicator';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            const typingIndicator = document.createElement('div');
+            typingIndicator.className = 'typing-indicator';
+            typingIndicator.innerHTML = '<span></span><span></span><span></span>';
+            
+            contentDiv.appendChild(typingIndicator);
+            typingDiv.appendChild(contentDiv);
+            container.appendChild(typingDiv);
+            
+            container.scrollTo({
+                top: container.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        function showAutocomplete(query) {
+            if (!query || query.length < 2) {
+                hideAutocomplete();
+                return;
+            }
+
+            const list = document.getElementById('autocompleteList');
+            const suggestions = [];
+
+            // Search in professors
+            allProfessors.forEach(prof => {
+                if (prof.name.toLowerCase().includes(query.toLowerCase())) {
+                    suggestions.push({
+                        text: prof.name,
+                        type: 'professor',
+                        details: `${prof.department} • ${prof.school}`
+                    });
+                }
+            });
+
+            // Search in courses
+            allCourses.forEach(course => {
+                if (course.code.toLowerCase().includes(query.toLowerCase()) || 
+                    course.name.toLowerCase().includes(query.toLowerCase())) {
+                    suggestions.push({
+                        text: course.code,
+                        type: 'course',
+                        details: `${course.name} • ${course.credits} credits`
+                    });
+                }
+            });
+
+            // Limit suggestions
+            suggestions.splice(5);
+
+            if (suggestions.length > 0) {
+                list.innerHTML = '';
+                suggestions.forEach(suggestion => {
+                    const item = document.createElement('div');
+                    item.className = 'autocomplete-item';
+                    item.innerHTML = `
+                        <div class="name">${suggestion.text}</div>
+                        <div class="details">${suggestion.details}</div>
+                    `;
+                    item.onclick = () => {
+                        document.getElementById('messageInput').value = suggestion.text;
+                        hideAutocomplete();
+                        sendMessage();
+                    };
+                    list.appendChild(item);
+                });
+                list.style.display = 'block';
+            } else {
+                hideAutocomplete();
+            }
+        }
+
+        function hideAutocomplete() {
+            document.getElementById('autocompleteList').style.display = 'none';
+        }
+
+        function handleInput() {
+            const input = document.getElementById('messageInput');
+            const query = input.value.trim();
+
+            // Clear previous timeout
+            if (autocompleteTimeout) {
+                clearTimeout(autocompleteTimeout);
+            }
+
+            // Set new timeout for autocomplete
+            autocompleteTimeout = setTimeout(() => {
+                showAutocomplete(query);
+            }, 300);
+
+            // Auto-resize textarea
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Disable input and button
+            input.disabled = true;
+            document.getElementById('sendButton').disabled = true;
+            hideAutocomplete();
+
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        message: message,
+                        current_professor: currentProfessor
+                    })
+                });
+
+                hideTypingIndicator();
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addMessage(data.response, 'bot', data.buttons);
+                    
+                    // Update current professor if found
+                    if (data.professor) {
+                        currentProfessor = data.professor;
+                    }
+                } else {
+                    let errorMessage = "I'm sorry, I encountered an error. Please try again.";
+                    if (response.status === 400) {
+                        errorMessage = "I couldn't understand your request. Please try rephrasing your question.";
+                    } else if (response.status === 500) {
+                        errorMessage = "I encountered an internal error. Please try again in a moment.";
+                    }
+                    addMessage(errorMessage, 'bot');
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                console.error('Error sending message:', error);
+                
+                let errorMessage = "I'm sorry, I'm having trouble connecting to the server right now. Please try again later.";
+                if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                    errorMessage = "I can't reach the server right now. Please check your internet connection and try again.";
+                    updateConnectionStatus(false);
+                }
+                
+                addMessage(errorMessage, 'bot');
+            } finally {
+                // Re-enable input and button
+                input.disabled = false;
+                document.getElementById('sendButton').disabled = false;
+                input.focus();
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            } else if (event.key === 'Escape') {
+                hideAutocomplete();
+            }
+        }
+
+        // Hide autocomplete when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.autocomplete-container')) {
+                hideAutocomplete();
+            }
+        });
     </script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </body>
 </html> 
