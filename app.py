@@ -165,15 +165,22 @@ def find_professor_office_hours_smart(professor_name):
         prof_name_from_data = normalize_name(prof.get('name', ''))
         if not prof_name_from_data:
             continue
+        
+        # Create a copy to avoid modifying the original data
+        prof_copy = prof.copy()
+        
         similarity = calculate_similarity(clean_input, prof_name_from_data)
+        
         if clean_input == prof_name_from_data:
-            prof['match_type'] = 'exact'
-            prof['similarity'] = 1.0
-            return [prof] # Exact match found, return immediately
+            prof_copy['match_type'] = 'exact'
+            prof_copy['similarity'] = 1.0
+            return [prof_copy] # Exact match found, return a copy
+
         if clean_input in prof_name_from_data or similarity > 0.6:
-            prof['match_type'] = 'contains' if clean_input in prof_name_from_data else 'fuzzy'
-            prof['similarity'] = similarity
-            potential_matches.append(prof)
+            prof_copy['match_type'] = 'contains' if clean_input in prof_name_from_data else 'fuzzy'
+            prof_copy['similarity'] = similarity
+            potential_matches.append(prof_copy) # Append the copy
+            
     potential_matches.sort(key=lambda x: x.get('similarity', 0), reverse=True)
     return potential_matches
 
